@@ -1,0 +1,212 @@
+{% load static %}
+<style>
+/* === COMMENT SECTION GLOBAL STYLE === */
+.comments-wrapper,
+.comments-wrapper * {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+.comments-wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: #1f2937;
+    font-size: 15px;
+    background: #fff;
+}
+
+/* === SINGLE COMMENT === */
+.comment {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.comment:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transform: translateY(-1px);
+}
+
+/* === COMMENT HEADER === */
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.comment-author {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.comment-author img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #d1d5db;
+}
+
+.comment-author strong {
+    font-weight: 600;
+    color: #111827;
+    font-size: 0.95rem;
+}
+
+.timestamp {
+    font-size: 0.83rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+/* === COMMENT BODY === */
+.comment-content {
+    margin-top: 0.5rem;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: #1f2937;
+}
+
+/* === ACTIONS === */
+.reply-btn {
+    background: transparent;
+    border: none;
+    color: #2563eb;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 0.4rem;
+    transition: color 0.2s ease;
+}
+
+.reply-btn:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* === REPLIES === */
+.replies {
+    margin-left: 2.2rem;
+    margin-top: 0.8rem;
+    border-left: 3px solid #6366f1; /* subtle gradient accent */
+    border-image: linear-gradient(to bottom, #6366f1, #3b82f6) 1;
+    padding-left: 1.1rem;
+}
+
+/* === REPLY FORM === */
+.reply-form {
+    margin-top: 0.7rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.reply-form textarea {
+    width: 100%;
+    min-height: 70px;
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #d1d5db;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 0.94rem;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.reply-form textarea:focus {
+    border-color: #2563eb;
+}
+
+.reply-form button {
+    margin-top: 0.6rem;
+    padding: 0.45rem 0.9rem;
+    background: linear-gradient(90deg, #6366f1, #3b82f6);
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.reply-form button:hover {
+    opacity: 0.9;
+}
+
+.cancel-reply-btn {
+    background: #e5e7eb;
+    color: #374151;
+    border: none;
+    border-radius: 6px;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.88rem;
+    margin-left: 0.4rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.cancel-reply-btn:hover {
+    background: #d1d5db;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .comment {
+        padding: 0.8rem;
+    }
+    .comment-author strong {
+        font-size: 0.9rem;
+    }
+    .timestamp {
+        font-size: 0.78rem;
+    }
+    .comment-content {
+        font-size: 0.9rem;
+    }
+    .reply-btn {
+        font-size: 0.85rem;
+    }
+}
+</style>
+
+<div class="comments-wrapper">
+    {% for comment in comments %}
+    <div class="comment" id="comment-{{ comment.id }}" data-id="{{ comment.id }}" data-blog="{{ comment.blog.id }}">
+        <div class="comment-header">
+            <div class="comment-author">
+                {% if comment.user.profile.profile_picture %}
+                    <img src="{{ comment.user.profile.profile_picture.url }}" alt="{{ comment.user.username }}">
+                {% else %}
+                    <img src="{% static 'uploads/default_profile.png' %}" alt="User">
+                {% endif %}
+                <div>
+                    <strong>{{ comment.user.profile.name|default:comment.user.username }}</strong>
+                    <div class="timestamp">{{ comment.created_at|timesince }} ago</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="comment-content">{{ comment.content|linebreaksbr }}</div>
+
+        <button class="reply-btn" data-parent="{{ comment.id }}">Reply</button>
+        <br><br>
+        <div id="reply-form-{{ comment.id }}" class="reply-form" style="display: none;">
+            <textarea class="reply-content" placeholder="Write a reply..."></textarea>
+            <button class="post-reply-btn" data-parent="{{ comment.id }}">Post Reply</button>
+            <button class="cancel-reply-btn" data-parent="{{ comment.id }}">Cancel</button>
+        </div>
+
+        {% if comment.children.exists %}
+        <div id="comment-section" class="comments-wrapper">
+            {% include "blog/comments.html" with comments=comment.children.all %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>

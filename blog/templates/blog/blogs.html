@@ -1,0 +1,817 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlogApp - Explore Blogs</title>
+    
+    <!-- ===== EXTERNAL STYLESHEETS ===== -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'blog/css/blog.css' %}" id="lightTheme" />
+    <link rel="stylesheet" href="{% static 'blog/css/dark.css' %}" id="darkTheme" disabled>   
+</head>
+<body>
+    <!-- ===== NAVIGATION BAR ===== -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Logo -->
+            <div class="logo">BlogApp</div>
+            
+            <!-- Navigation Menu -->
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="{% url 'blogs' %}" class="nav-link active"> <i class="fa fa-compass"></i> Explore</a></li>
+                <li><a href="{% url 'user_blog' %}" class="nav-link"> <i class="fa fa-user"></i> My Blogs</a></li>
+                <li><a href="{% url 'trending' %}" class="nav-link"><i class="fa fa-fire"></i> Trending</a></li>
+                <li><a href="{% url 'search_users' %}" class="nav-link"><i class="fa fa-search"></i> Search Users</li>
+                <li>
+                    <button class="btn-primary mobile-btn">
+                        <a href="{% url 'create_blog' %}"> + New Blog </a>
+                    </button>
+                </li>
+            </ul>
+            
+            <!-- Navigation Actions -->
+            <div class="nav-actions">
+                <!-- NOTIFICATION ICON - Always visible -->
+                <div class="notification-icon" onclick="toggleNotifications()">
+                    <i class="fa fa-bell notification-bell"></i>
+                    <span class="notification-badge" id="notificationCount">{{unread_count}}</span>
+                </div>
+                
+                <!-- Profile Icon -->
+                <div class="profile-icon">
+                    <a href="{% url 'profile' %}" class="profile-link">
+                        <div class="author-avatar">
+                            {% if request.user.profile.profile_picture %}
+                                <img src="{{ request.user.profile.profile_picture.url }}" alt="{{ request.user.profile.name|default:request.user.username }}">
+                            {% else %}
+                                <img src="{% static 'uploads/default_profile.png' %}" alt="Default Profile">
+                            {% endif %}
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Mobile Menu Toggle -->
+                <div class="mobile-menu-toggle" id="mobileToggle">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== NOTIFICATION OVERLAY ===== -->
+    <div class="notification-overlay" id="notificationOverlay" onclick="toggleNotifications()"></div>
+    
+    <!-- ===== NOTIFICATION PANEL ===== -->
+    <div class="notification-panel" id="notificationPanel">
+        <!-- Notification Header -->
+        <div class="notification-header">
+            <div class="notification-title">
+                <i class="fa fa-bell"></i>
+                Notifications
+                {% if unread_count %}
+                    <span class="badge" id="notificationCount">{{ unread_count }}</span>
+                {% endif %}
+            </div>
+            <button class="close-notification" onclick="toggleNotifications()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Notification Tabs -->
+        <div class="notification-tabs">
+            <button class="notification-tab active" onclick="switchTab('all', this)">All</button>
+            <button class="notification-tab" onclick="switchTab('unread', this)">Unread</button>
+        </div>
+
+        <!-- Notification Content -->
+        <div class="notification-content" id="notificationContent">
+            {% if notifications %}
+                {% for notif in notifications %}
+                    <div class="notification-item {% if not notif.is_read %}unread{% endif %}">
+                        <!-- Avatar -->
+                        {% if notif.sender %}
+                            {% if notif.sender.profile.profile_picture %}
+                                <img src="{{ notif.sender.profile.profile_picture.url }}" alt="User" class="notification-avatar">
+                            {% else %}
+                                <img src="{% static 'uploads/default_profile.png' %}" alt="User" class="notification-avatar">
+                            {% endif %}
+                        {% else %}
+                            {% if notif.recipient.profile.profile_picture %}
+                                <img src="{{ notif.recipient.profile.profile_picture.url }}" alt="User" class="notification-avatar">
+                            {% else %}
+                                <img src="{% static 'uploads/default_profile.png' %}" alt="User" class="notification-avatar">
+                            {% endif %}
+                        {% endif %}
+
+                        <!-- Notification Details -->
+                        <div class="notification-details">
+                            <div class="notification-text">
+                                {% if notif.notification_type == 'like' and notif.blog %}
+                                    <strong><a href="{% url 'view_user_profile' notif.sender.username %}">{{ notif.sender.username }}</a></strong> liked your blog post 
+                                    "<span class="blog-link">{{ notif.blog.title }}</span>"
+                                {% elif notif.notification_type == 'comment' and notif.blog %}
+                                    <strong><a href="{% url 'view_user_profile' notif.sender.username %}">{{ notif.sender.username }}</a></strong> commented on 
+                                    "<span class="blog-link">{{ notif.blog.title }}</span>"
+                                {% elif notif.notification_type == 'reply' and notif.blog %}
+                                    <strong><a href="{% url 'view_user_profile' notif.sender.username %}">{{ notif.sender.username }}</a></strong> replied to your comment 
+                                    "<span class="blog-link">{{ notif.blog.title }}</span>"
+                                {% elif notif.notification_type == 'follow' %}
+                                    <strong><a href="{% url 'view_user_profile' notif.sender.username %}">{{ notif.sender.username }}</a></strong> started following you
+                                {% elif notif.notification_type == 'follow_request' %}
+                                    {% if notif.follow and not notif.follow.is_approved %}
+                                        <strong><a href="{% url 'view_user_profile' notif.sender.username %}">{{ notif.sender.username }}</a></strong> {{ notif.message }}
+                                        <button class="btn-approve" data-url="{% url 'handle_follow_request' notif.id 'approve' %}">Accept</button>
+                                        <button class="btn-reject" data-url="{% url 'handle_follow_request' notif.id 'reject' %}">Reject</button>
+                                    {% else %}
+                                        {{ notif.message }}
+                                    {% endif %}
+                                {% elif notif.notification_type == 'trending' and notif.blog %}
+                                    Your blog "<span class="blog-link">{{ notif.blog.title }}</span>" is trending!
+                                {% else %}
+                                    <em>Notification data unavailable</em>
+                                {% endif %}
+                            </div>  
+                            <div class="notification-time">{{ notif.created_at|timesince }} ago</div>
+                        </div>
+
+                        <!-- Notification Icon -->
+                        <div class="notification-icon-type">
+                            {% if notif.notification_type == 'like' %}
+                                <i class="fa fa-heart"></i>
+                            {% elif notif.notification_type == 'comment' or notif.notification_type == 'reply' %}
+                                <i class="fa fa-comment"></i>
+                            {% elif notif.notification_type == 'follow' or notif.notification_type == 'follow_request' %}
+                                <i class="fa fa-user-plus"></i>
+                            {% elif notif.notification_type == 'trending' %}
+                                <i class="fa fa-bolt"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="empty-notifications">
+                    <i class="fa fa-bell-slash"></i>
+                    <p>No notifications yet</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Notification Actions -->
+        <div class="notification-actions">
+            <button class="notification-btn btn-mark-read" onclick="markAllAsRead()">
+                <i class="fa fa-check"></i> Mark All Read
+            </button>
+             <button class="notification-btn btn-clear-all" onclick="clearAllNotifications()">
+                <i class="fa fa-trash"></i> Clear All
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== MAIN CONTENT CONTAINER ===== -->
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Explore Blogs</h1>
+            <p class="page-subtitle">Discover amazing stories from our community</p>
+        </div>
+
+        <!-- ===== FILTER SECTION ===== -->
+        <div class="filter-section">
+            <span class="filter-label">Filter by:</span>
+            <div class="filter-chips">
+                <li class="search-box">
+                    <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input type="text" placeholder="Search blogs..." />
+                </li>
+            </div>
+            <div class="filter-toggle" onclick="toggleFilterOverlay()">
+                <i class="fas fa-filter"></i> Filter
+            </div> 
+        </div>
+        
+        <br><br>
+        
+        <!-- ===== FILTER OVERLAY ===== -->
+        <div id="filterOverlay" class="filter-overlay">
+            <div class="filter-panel">
+                <div class="filter-header">
+                    <h2>Filter Blogs</h2>
+                    <button class="close-filter" onclick="toggleFilterOverlay()">✖</button>
+                </div>
+                <div class="filter-content">
+                    <h4>Categories</h4>
+                    <div class="filter-chips">
+                        <div class="chip active" onclick="filterBlogs('all', this)">All</div>
+                        {% for category in categories %}
+                            <div class="chip" onclick="filterBlogs('{{ category.name|lower }}', this)">
+                                {{ category.name }}
+                            </div>
+                        {% endfor %}            
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== BLOG GRID ===== -->
+        <div class="blog-grid">
+            {% for blog in blogs %}
+            <div class="blog-card" id="blog-{{ blog.id }}" data-blog="{{ blog.id }}" data-category="{{ blog.category.name|lower }}">
+                <!-- Blog Image -->
+                {% if blog.image %}
+                <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="blog-image">
+                {% else %}
+                <div class="blog-image">📝</div>
+                {% endif %}
+                
+                <!-- Blog Content -->
+                <div class="blog-content">
+                    <!-- Blog Meta Information -->
+                    <div class="blog-meta">
+                        <div class="author-avatar">
+                            {% if blog.author.user.profile.profile_picture %}
+                            <img src="{{ blog.author.user.profile.profile_picture.url }}" alt="{{ blog.author.user.profile.name }}">
+                            {% else %}
+                            <img src="{% static 'uploads/default_profile.png' %}" alt="Default Profile">
+                            {% endif %}
+                        </div>
+                        <div class="author-info">
+                            <div class="author-name"><a href="{% url 'view_user_profile' blog.author.user.username %}">{{ blog.author.user.profile.name }}</a></div>
+                            <div class="blog-date">{{ blog.created_at|timesince }} ago</div>
+                        </div>
+                        {% if blog.category %}
+                        <div class="blog-category">{{ blog.category.name }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Blog Title and Excerpt -->
+                    <h3 class="blog-title">{{ blog.title }}</h3>
+                    <p class="blog-excerpt">{{ blog.excerpt|truncatechars:120 }}</p>
+                    
+                    <!-- Blog Footer with Stats -->
+                    <div class="blog-footer">
+                        <div class="blog-stats">
+                            <div class="stat-item like-btn" data-blog="{{ blog.id }}">
+                                ❤️ <span class="like-count">{{ blog.like_count }}</span>
+                                {% csrf_token %}
+                            </div>
+                            <div class="stat-item">💬 <span>{{ blog.comment_count }}</span></div>
+                            <div class="stat-item views">👁️ <span>{{ blog.views }}</span></div>
+                        </div>
+                        <div class="read-more" onclick="openBlogModal(`{{ blog.id }}`,`{{ blog.title|escapejs }}`,`{% if blog.image %}{{ blog.image.url|escapejs }}{% else %}{% static 'uploads/default_blog.jpg' %}{% endif %}`,
+                            `{{ blog.content|linebreaksbr|escapejs }}`)">
+                            Read More >
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- ===== BLOG MODAL ===== -->
+        <div id="blogModal" class="blog-modal-overlay">
+            <div class="blog-modal">
+                <div class="blog-modal-header">
+                    <h2 id="modalTitle"></h2>
+                    <button class="close-btn" onclick="closeBlogModal()">✖</button>
+                </div>
+                <div class="blog-modal-image">
+                    <img id="modalImage" src="" alt="">
+                </div>
+                <div id="modalContent" class="blog-modal-content"></div>
+            </div>
+        </div>
+
+        <!-- ===== COMMENT MODAL ===== -->
+        <div id="commentModal" class="blog-modal-overlay">
+            <div class="blog-modal">
+                <div class="blog-modal-header">
+                    <h2>Comments</h2>
+                    <button class="close-btn" onclick="closeCommentModal()">✖</button>
+                </div>
+
+                <div id="commentList" class="blog-modal-content">
+                    <div class="loading">Loading comments...</div>
+                </div>
+
+                <div class="comment-form">
+                    <textarea id="newCommentContent" placeholder="Add a comment..."></textarea>
+                    <button id="postCommentBtn">Post Comment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== EXTERNAL JAVASCRIPT ===== -->
+    <script src="{% static 'blog/js/blog.js' %}"></script>
+    
+    <!-- ===== MAIN JAVASCRIPT LOGIC ===== -->
+    <script>
+        // =========================================================================
+        // GLOBAL VARIABLES & INITIALIZATION
+        // =========================================================================
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const modal = document.getElementById('blogModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalImage = document.getElementById('modalImage');
+        const modalContent = document.getElementById('modalContent');
+        const commentModal = document.getElementById("commentModal");
+        const commentList = document.getElementById("commentList");
+        const postCommentBtn = document.getElementById("postCommentBtn");
+        const newCommentContent = document.getElementById("newCommentContent");
+        let activeBlogId = null;
+
+        // =========================================================================
+        // BLOG MODAL FUNCTIONS
+        // =========================================================================
+        
+        /**
+         * Opens the blog modal with detailed content
+         * @param {string} blogId - The ID of the blog
+         * @param {string} title - The blog title
+         * @param {string} imageUrl - The blog image URL
+         * @param {string} contentHtml - The formatted blog content
+         */
+        function openBlogModal(blogId, title, imageUrl, contentHtml) {
+            // Set modal title and content
+            modalTitle.textContent = title;
+            
+            // Handle blog image display
+            modalImage.classList.remove("loaded");
+            const imageContainer = document.querySelector(".blog-modal-image");
+
+            if (imageUrl && imageUrl.trim() !== "") {
+                imageContainer.classList.add("active");
+                modalImage.src = imageUrl;
+
+                modalImage.onload = () => {
+                    modalImage.classList.add("loaded");
+                };
+            } else {
+                imageContainer.classList.remove("active");
+                modalImage.removeAttribute("src");
+            }
+
+            // Set content and show modal
+            modalContent.innerHTML = contentHtml;
+            modal.classList.add("active");
+            document.body.classList.add("noscroll");
+
+            // Increment blog view count via AJAX
+            fetch(`/blogs/blog/${blogId}/increment-view/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("View update:", data);
+
+                // Update view count in UI if successful
+                const viewElement = document.querySelector(`#blog-${blogId} .stat-item.views span`);
+                if (viewElement && data.status === "incremented") {
+                    viewElement.textContent = data.views;
+                }
+            })
+            .catch((error) => console.error("Error updating blog view:", error));
+        }
+
+        /**
+         * Closes the blog modal with smooth transition
+         */
+        function closeBlogModal() {
+            modal.classList.add('closing');
+            document.body.classList.remove('noscroll');
+            setTimeout(() => {
+                modal.classList.remove('active', 'closing');
+            }, 300);
+        }
+
+        // =========================================================================
+        // UTILITY FUNCTIONS
+        // =========================================================================
+        
+        /**
+         * Gets CSRF token from cookies
+         * @param {string} name - The cookie name
+         * @returns {string} - The cookie value
+         */
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === name + "=") {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // =========================================================================
+        // EVENT LISTENERS
+        // =========================================================================
+        
+        // Close blog modal when clicking outside content
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeBlogModal();
+        });
+
+        // Close modals with ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeBlogModal();
+                closeCommentModal();
+            }
+        });
+
+        // =========================================================================
+        // FILTER SYSTEM FUNCTIONS
+        // =========================================================================
+        
+        /**
+         * Toggles the filter overlay visibility
+         */
+        function toggleFilterOverlay() {
+            const overlay = document.getElementById('filterOverlay');
+            if (overlay.style.display === 'flex') {
+                overlay.classList.remove('active');
+                setTimeout(() => overlay.style.display = 'none', 300);
+            } else {
+                overlay.style.display = 'flex';
+                setTimeout(() => overlay.classList.add('active'), 10);
+            }
+        }
+
+        /**
+         * Filters blogs by category
+         * @param {string} category - The category to filter by
+         * @param {HTMLElement} element - The clicked filter element
+         */
+        function filterBlogs(category, element) {
+            // Update active filter chip
+            document.querySelectorAll('.chip').forEach(chip => chip.classList.remove('active'));
+            element.classList.add('active');
+
+            // Filter blog cards
+            const blogs = document.querySelectorAll('.blog-card');
+            blogs.forEach(blog => {
+                const blogCategory = blog.dataset.category?.toLowerCase() || '';
+                if (category === 'all' || blogCategory === category) {
+                    blog.style.display = 'block';
+                    blog.style.opacity = '1';
+                } else {
+                    blog.style.display = 'none';
+                    blog.style.opacity = '0';
+                }
+            });
+
+            // Close overlay after selection
+            setTimeout(() => toggleFilterOverlay(), 200);
+        }
+
+        // =========================================================================
+        // LIKE BUTTON HANDLING
+        // =========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const likeButtons = document.querySelectorAll('.like-btn');
+            const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+
+            if (!csrfToken) console.error("⚠️ Missing CSRF token in template!");
+
+            likeButtons.forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const blogId = btn.dataset.blog;
+
+                    try {
+                        const response = await fetch(`/blogs/like/${blogId}/`, {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrfToken },
+                        });
+
+                        const data = await response.json();
+                        if (response.ok) {
+                            // Update like count and visual state
+                            btn.querySelector('.like-count').textContent = data.like_count;
+                            btn.classList.toggle('liked', data.liked);
+                        } else {
+                            alert('Error: ' + (data.error || response.statusText));
+                        }
+                    } catch (err) {
+                        console.error('Fetch failed:', err);
+                    }
+                });
+            });
+        });
+
+        // =========================================================================
+        // COMMENT MODAL FUNCTIONS
+        // =========================================================================
+        
+        /**
+         * Opens the comment modal for a specific blog
+         */
+        async function openCommentModal(blogId) {
+            activeBlogId = blogId;
+            
+            // Show modal
+            commentModal.style.display = 'flex';
+            setTimeout(() => {
+                commentModal.classList.add("active");
+            }, 10);
+            document.body.classList.add("noscroll");
+
+            // Show loading state
+            commentList.innerHTML = "<div class='loading'>Loading comments...</div>";
+
+            try {
+                const response = await fetch(`/blogs/${blogId}/comments/`);
+                if (response.ok) {
+                    const html = await response.text();
+                    commentList.innerHTML = html;
+                } else {
+                    commentList.innerHTML = "<div class='loading'>Failed to load comments</div>";
+                }
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                commentList.innerHTML = "<div class='loading'>Error loading comments</div>";
+            }
+        }
+
+        /**
+         * Closes the comment modal
+         */
+        function closeCommentModal() {
+            commentModal.classList.remove("active");
+            document.body.classList.remove("noscroll");
+            
+            setTimeout(() => {
+                commentModal.style.display = 'none';
+                commentList.innerHTML = "<div class='loading'>Loading comments...</div>";
+                newCommentContent.value = "";
+            }, 300);
+        }
+
+        // =========================================================================
+        // COMMENT POSTING FUNCTIONALITY
+        // =========================================================================
+        
+        postCommentBtn.addEventListener("click", async () => {
+            const content = newCommentContent.value.trim();
+            if (!content) {
+                alert("Comment cannot be empty!");
+                return;
+            }
+            
+            if (!activeBlogId) {
+                alert("No blog selected!");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/blogs/comment/${activeBlogId}/add/`, {
+                    method: "POST",
+                    headers: { 
+                        "X-CSRFToken": csrftoken,
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: new URLSearchParams({ 
+                        content: content,
+                        blog_id: activeBlogId 
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Clear input and reload comments
+                    newCommentContent.value = "";
+                    await openCommentModal(activeBlogId); // Reload comments
+                } else {
+                    alert(data.error || "Failed to add comment");
+                }
+            } catch (error) {
+                console.error('Error posting comment:', error);
+                alert("Failed to post comment");
+            }
+        });
+
+        // =========================================================================
+        // EVENT LISTENERS FOR COMMENT TRIGGERS
+        // =========================================================================
+        
+        // Add click event to all comment triggers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Comment icon click
+            document.querySelectorAll('.comment-trigger').forEach(trigger => {
+                trigger.addEventListener('click', function(e) {
+                    const blogId = this.getAttribute('data-blog');
+                    if (blogId) {
+                        openCommentModal(blogId);
+                    }
+                });
+            });
+            
+            // Also make sure comment stat items work
+            document.querySelectorAll('.stat-item').forEach(stat => {
+                if (stat.textContent.includes("💬") && !stat.classList.contains('comment-trigger')) {
+                    stat.addEventListener('click', function(e) {
+                        const blogCard = this.closest('.blog-card');
+                        if (blogCard) {
+                            const blogId = blogCard.getAttribute('data-blog');
+                            if (blogId) {
+                                openCommentModal(blogId);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        // =========================================================================
+        // MODAL CLOSE HANDLERS
+        // =========================================================================
+        
+        // Close modals when clicking outside
+        commentModal.addEventListener('click', function(e) {
+            if (e.target === commentModal) {
+                closeCommentModal();
+            }
+        });
+
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeBlogModal();
+            }
+        });
+
+        // Close modals with ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeBlogModal();
+                closeCommentModal();
+            }
+        });
+
+        // =========================================================================
+        // NOTIFICATION SYSTEM FUNCTIONS
+        // =========================================================================
+        
+        /**
+         * Toggles the notification panel visibility
+         */
+        function toggleNotifications() {
+            const panel = document.getElementById('notificationPanel');
+            const overlay = document.getElementById('notificationOverlay');
+            
+            panel.classList.toggle('active');
+            overlay.classList.toggle('active');
+            
+            if (panel.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+
+        /**
+         * Switches between notification tabs
+         * @param {string} tab - The tab to switch to ('all' or 'unread')
+         * @param {HTMLElement} element - The clicked tab element
+         */
+        function switchTab(tab, element) {
+            // Update active tab
+            document.querySelectorAll('.notification-tab').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+            
+            // Filter notifications based on tab
+            const items = document.querySelectorAll('.notification-item');
+            items.forEach(item => {
+                if (tab === 'all') {
+                    item.style.display = 'flex';
+                } else if (tab === 'unread') {
+                    item.style.display = item.classList.contains('unread') ? 'flex' : 'none';
+                }
+            });
+        }
+
+        /**
+         * Marks all notifications as read
+         */
+        function markAllAsRead() {
+            fetch("{% url 'mark_all_notifications_read' %}", {
+                method: 'POST', 
+                headers: {'X-CSRFToken': csrftoken}
+            })
+            .then(() => {
+                // Update UI to show all notifications as read
+                document.querySelectorAll('.notification-item.unread').forEach(item => item.classList.remove('unread'));
+                document.getElementById('notificationCount').textContent = '0';
+            });
+        }
+
+        /**
+         * Clears all notifications after confirmation
+         */
+        function clearAllNotifications() {
+            if(confirm('Are you sure you want to clear all notifications?')) {
+                fetch("{% url 'clear_all_notifications' %}", {
+                    method: 'POST', 
+                    headers: {'X-CSRFToken': csrftoken}
+                })
+                .then(() => {
+                    // Clear notification UI
+                    document.getElementById('notificationContent').innerHTML = `
+                        <div class="empty-notifications">
+                            <i class="fa fa-bell-slash"></i>
+                            <p>No notifications yet</p>
+                        </div>
+                    `;
+                    document.getElementById('notificationCount').textContent = '0';
+                });
+            }
+        }
+
+        // =========================================================================
+        // FOLLOW REQUEST HANDLING
+        // =========================================================================
+        
+        /**
+         * Handles follow request actions (approve/reject)
+         * @param {HTMLElement} button - The clicked button element
+         * @param {string} actionType - The action type ('approve' or 'reject')
+         */
+        function handleFollowAction(button, actionType) {
+            const url = button.getAttribute('data-url');
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'approved' || data.status === 'rejected') {
+                    // Update the notification text dynamically
+                    const parent = button.closest('.notification-text');
+                    parent.innerHTML = data.new_message;
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        // Attach event listeners for follow request buttons
+        document.addEventListener("DOMContentLoaded", function() {
+            // Approve follow request
+            document.querySelectorAll('.btn-approve').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    handleFollowAction(btn, 'approve');
+                });
+            });
+
+            // Reject follow request
+            document.querySelectorAll('.btn-reject').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    handleFollowAction(btn, 'reject');
+                });
+            });
+        });
+
+        // Close notification panel with ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const panel = document.getElementById('notificationPanel');
+                if (panel.classList.contains('active')) {
+                    toggleNotifications();
+                }
+            }
+        });
+
+        // =========================================================================
+        // PERIODIC UPDATES
+        // =========================================================================
+        
+        /**
+         * Periodically refresh follow counts (every 5 seconds)
+         */
+        function refreshFollowCounts() {
+            // Implementation for refreshing follow counts
+            console.log("Refreshing follow counts...");
+        }
+        
+        setInterval(() => refreshFollowCounts(), 10000);
+    </script>
+</body>
+</html>

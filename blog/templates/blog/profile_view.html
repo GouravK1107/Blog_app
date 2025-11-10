@@ -1,0 +1,1244 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ profile.name|default:profile.user.username }} - Profile</title>
+    <link rel="stylesheet" href="{% static 'blog/css/view_profile.css' %}">
+    <style>
+        /* ===============================
+           BLOG CARD GRID
+        =============================== */
+        .user-blogs-section {
+            width: 100%;
+            margin-top: 4rem;
+            padding: 2rem 1.5rem 3rem;
+            background: #f8fafc;  /* subtle contrast background */
+            border-radius: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .user-blogs-section .info-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+
+        .user-blogs-section .info-title::after {
+            content: "";
+            display: block;
+            width: 80px;
+            height: 3px;
+            background: #3b82f6;
+            border-radius: 2px;
+            margin: 0.75rem auto 0;
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            justify-items: center;
+        }
+
+        .blog-card {
+            width: 100%;
+            max-width: 400px;
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .blog-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .blog-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+        }
+
+        .blog-content {
+            padding: 1.5rem;
+        }
+
+        .blog-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .author-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+        }
+
+        .author-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+
+        .author-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 0.875rem;
+        }
+
+        .author-name a {
+            text-decoration: none;
+            transition: all 0.3s ease; 
+            color: #1e293b;
+        }
+
+        .author-name a:hover {
+            color: #1a202c;            
+            text-decoration: underline;
+            letter-spacing: 0.5px;     
+        }
+
+        .blog-category {
+            padding: 0.25rem 0.75rem;
+            background: #eff6ff;
+            color: #3b82f6;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .blog-title {
+            font-size: 1.25rem;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .blog-excerpt {
+            color: #64748b;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .blog-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .blog-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .read-more {
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: all 0.5s ease; 
+            cursor: pointer;
+        }
+
+        .read-more:hover {
+            text-decoration: underline;
+        }
+
+        /* ===============================
+           MODAL STYLES
+        =============================== */
+        .blog-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.35s ease, visibility 0.35s;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+        }
+
+        .blog-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .blog-modal {
+            background: #fff;
+            width: 75%;
+            max-width: 900px;
+            max-height: 90vh;
+            border-radius: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            animation: fadeInUp 0.3s ease;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes fadeInUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .blog-modal-header {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(10px);
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            border-radius: 16px 16px 0 0;
+            z-index: 10;
+        }
+
+        .close-btn {
+            background: #f3f4f6;
+            border: none;
+            color: #475569;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: #ef4444;
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .blog-modal-image {
+            width: 100%;
+            max-height: 400px;
+            background: #f8fafc;
+            display: none;
+        }
+
+        .blog-modal-image.active {
+            display: block;
+        }
+
+        .blog-modal-image img {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .blog-modal-image img.loaded {
+            opacity: 1;
+        }
+
+        .blog-modal-content {
+            padding: 2.5rem 3rem;
+            color: #1f2937;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            text-align: justify;
+            background: #ffffff;
+        }
+
+        /* ===============================
+           RESPONSIVE
+        =============================== */
+        @media (max-width: 768px) {
+            .blog-modal { width: 95%; max-height: 90vh; }
+            .blog-modal-header { padding: 1rem 1.25rem; }
+            .close-btn { width: 36px; height: 36px; }
+            .blog-modal-image { height: 240px; }
+            .blog-modal-content { padding: 1.5rem; font-size: 1rem; }
+        }
+
+        /* ===============================
+           PROFILE PAGE UTILS
+        =============================== */
+        .back-button {
+            background: #f1f5f9;
+            margin-top: 1.5rem;
+            margin-left: 1.5rem;
+            color: #3b82f6;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border: none;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-button:hover {
+            background: #e2e8f0;
+            transform: translateX(-3px);
+        }
+
+        .back-button { left: 1.5rem; }
+    
+        .user-blogs-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid #f1f5f9;
+        }
+
+        .comment-form {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            width: 100%;
+            gap: 1rem;
+            padding: 1.2rem;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 1.5rem;
+            background-color: #fafafa; /* subtle background lift */
+            border-radius: 0 0 8px 8px;
+            box-sizing: border-box;
+        }
+
+        .comment-form textarea {
+            flex: 1;
+            min-height: 70px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            color: #111827;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background: #fff;
+            margin: 0 0.5rem; /* adds that 'space' around it */
+        }
+
+        .comment-form textarea::placeholder {
+            color: #9ca3af;
+        }
+
+        .comment-form textarea:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .comment-form button {
+            padding: 10px 16px;
+            background-color: #6366f1;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            flex-shrink: 0;
+        }
+
+        .comment-form button:hover {
+            background-color: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .comment-form button:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive tweak */
+        @media (max-width: 600px) { 
+            .comment-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .comment-form button {
+                align-self: flex-end;
+            }
+        }
+        .like-btn.liked { color: red; font-weight: bold; cursor: pointer; }
+        .like-btn { cursor: pointer; transition: all 0.2s; }
+        .like-btn:hover { transform: scale(1.1); }
+
+        #commentModal.blog-modal-overlay {
+            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.85);
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 10000;
+        }
+
+        #commentModal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #commentModal.closing {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+    /* Fade-in / Fade-out Animations for Smooth Content */
+        .fade-in {
+            animation: fadeIn 0.25s ease forwards;
+        }
+
+        .fade-out {
+            animation: fadeOut 0.25s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        /* ===============================
+           FOLLOW BUTTON STYLES
+        =============================== */
+        .follow-btn-container {
+            display: flex;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+
+        .follow-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .follow-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .follow-btn:active {
+            transform: translateY(0);
+        }
+
+        .follow-btn.following {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .follow-btn.following:hover {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .follow-btn.following:hover::before {
+            content: 'Unfollow';
+        }
+
+        .follow-btn.following:hover span {
+            display: none;
+        }
+
+        .follow-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        .follow-btn:active::after {
+            width: 100px;
+            height: 100px;
+        }
+        /* ===============================
+            FOLLOW STATS STYLES
+        =============================== */
+        .follow-stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin: 1.5rem 0 2rem;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .follow-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .follow-count {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1;
+        }
+
+        .follow-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Responsive adjustment */
+        @media (max-width: 768px) {
+            .follow-stats-container {
+                gap: 2rem;
+                padding: 1rem;
+            }
+
+            .follow-count {
+                font-size: 1.75rem;
+            }
+
+            .follow-label {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="profile-card">
+
+            <!-- Header Section -->
+            <div class="profile-header">
+                <button onclick="history.back()" class="back-button">← Back</button>
+            </div>
+
+            <!-- Profile Picture Section -->
+            <div class="profile-avatar-section">
+                <div class="profile-avatar">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" alt="{{ profile.name }}">
+                    {% else %}
+                        <img src="{% static 'images/default_profile.png' %}" alt="Default Profile">
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Follow Button -->
+            <div class="follow-btn-container">
+                {% if request.user != profile.user %}
+                    <button class="follow-btn" id="followButton" data-username="{{ profile.user.username }}">
+                        {% if is_following %}
+                            Unfollow
+                        {% else %}
+                            Follow
+                        {% endif %}
+                    </button>
+                {% endif %}
+            </div>
+            <!-- <button class="follow-btn" data-username="{{ profile.user.username }}">
+                {% if is_following %}Unfollow{% else %}Follow{% endif %}
+            </button> -->
+            <!-- Follow Button -->
+
+<!-- FOLLOWERS/FOLLOWING COUNTS - ADDED SECTION -->
+            <div class="follow-stats-container">
+                <div class="follow-stat">
+                    <span class="follow-count">{{ followers_count|default:0 }}</span>
+                    <span class="follow-label">Followers</span>
+                </div>
+                <div class="follow-stat">
+                    <span class="follow-count">{{ following_count|default:0 }}</span>
+                    <span class="follow-label">Following</span>
+                </div>
+            </div>  
+
+            <!-- Profile Content Section -->
+            <div class="profile-content">
+                <h1 class="profile-name">{{ profile.name|default:profile.user.username }}</h1>
+                <p class="profile-username">@{{ profile.user.username }}</p>
+
+                {% if profile.bio %}
+                    <p class="profile-bio">{{ profile.bio }}</p>
+                {% endif %}
+
+                <!-- Social Links -->
+                <div class="social-section">
+                    <h3 class="info-title">Connect With Me</h3>
+                    <div class="social-links">
+                        {% if profile.github %}
+                            <a href="{{ profile.github }}" class="social-link github" target="_blank" title="GitHub">
+                                <svg fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
+                                </svg>
+                            </a>
+                        {% endif %}
+                        {% if profile.twitter %}
+                            <a href="{{ profile.twitter }}" class="social-link twitter" target="_blank" title="Twitter">
+                                <svg fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
+                                </svg>
+                            </a>
+                        {% endif %}
+                        {% if profile.instagram %}
+                            <a href="{{ profile.instagram }}" class="social-link instagram" target="_blank" title="Instagram">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke-width="2"></rect>
+                                    <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" stroke-width="2"></path>
+                                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke-width="2" stroke-linecap="round"></line>
+                                </svg>
+                            </a>
+                        {% endif %}
+                        {% if profile.linkedin %}
+                            <a href="{{ profile.linkedin }}" class="social-link linkedin" target="_blank" title="LinkedIn">
+                                <svg fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
+                                </svg>
+                            </a>
+                        {% endif %}
+                        {% if profile.website %}
+                            <a href="{{ profile.website }}" class="social-link website" target="_blank" title="Website">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12" stroke-width="2"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke-width="2"></path>
+                                </svg>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Personal Info Section -->
+                <div class="profile-info">
+                    <h3 class="info-title">Personal Information</h3>
+                    <div class="info-item">
+                        <span class="info-label">Date of Birth:</span>
+                        <span class="info-value">
+                            {% if profile.date_of_birth %}
+                                {{ profile.date_of_birth|date:"F j, Y" }}
+                            {% else %}
+                                Not provided
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">Member Since:</span>
+                        <span class="info-value">{{ profile.created_at|date:"F Y" }}</span>
+                    </div>
+                
+                    <!-- Links Section -->
+                    <div class="info-section">
+                        <h3 class="info-title">Links</h3>
+                        {% if profile.github %}
+                            <div class="info-item">
+                                <span class="info-label">GitHub:</span>
+                                <span class="info-value"><a href="{{ profile.github }}" target="_blank">{{ profile.github }}</a></span>
+                            </div>
+                        {% endif %}
+                        {% if profile.twitter %}
+                            <div class="info-item">
+                                <span class="info-label">Twitter:</span>
+                                <span class="info-value"><a href="{{ profile.twitter }}" target="_blank">{{ profile.twitter }}</a></span>
+                            </div>
+                        {% endif %}
+                        {% if profile.instagram %}
+                            <div class="info-item">
+                                <span class="info-label">Instagram:</span>
+                                <span class="info-value"><a href="{{ profile.instagram }}" target="_blank">{{ profile.instagram }}</a></span>
+                            </div>
+                        {% endif %}
+                        {% if profile.linkedin %}
+                            <div class="info-item">
+                                <span class="info-label">LinkedIn:</span>
+                                <span class="info-value"><a href="{{ profile.linkedin }}" target="_blank">{{ profile.linkedin }}</a></span>
+                            </div>
+                        {% endif %}
+                        {% if profile.website %}
+                            <div class="info-item">
+                                <span class="info-label">Website:</span>
+                                <span class="info-value"><a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a></span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+                        <!-- BLOG SECTION -->
+            <div class="user-blogs-section">
+                <h3 class="info-title">Blogs by {{ profile.user.username }}</h3>
+                {% if blogs %}
+                    <!-- ===== BLOG CARDS ===== -->
+                    <div class="blog-grid">
+                        {% for blog in blogs %}
+                            <div class="blog-card" id="blog-{{ blog.id }}" data-blog="{{ blog.id }}" data-category="{{ blog.category.name|lower }}">
+                                {% if blog.image %}
+                                    <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="blog-image">
+                                {% else %}
+                                    <div class="blog-image">📝</div>
+                                {% endif %}
+                                <div class="blog-content">
+                                    <div class="blog-meta">
+                                        <div class="author-avatar">
+                                        {% if blog.author.user.profile.profile_picture %}
+                                            <img src="{{ blog.author.user.profile.profile_picture.url }}" alt="{{ blog.author.user.profile.name }}">
+                                        {% else %}
+                                            <img src="{% static 'uploads/default_profile.png' %}" alt="Default Profile">
+                                        {% endif %}
+                                    </div>
+                                    <div class="author-info">
+                                        <div class="author-name"><a href="{% url 'view_user_profile' blog.author.user.username %}">{{ blog.author.user.profile.name }}</a></div>
+                                        <div class="blog-date">{{ blog.created_at|timesince }} ago</div>
+                                    </div>
+                                    {% if blog.category %}
+                                        <div class="blog-category">{{ blog.category.name }}</div>
+                                    {% endif %}
+                                </div>
+                                <h3 class="blog-title">{{ blog.title }}</h3>
+                                <p class="blog-excerpt">{{ blog.excerpt|truncatechars:120 }}</p>
+                                <div class="blog-footer">
+                                    <div class="blog-stats">
+                                        <div class="stat-item like-btn" data-blog="{{ blog.id }}">
+                                            ❤️ <span class="like-count">{{ blog.like_count }}</span>
+                                            {% csrf_token %}
+                                        </div>
+                                        <div class="stat-item">💬 <span>{{ blog.comment_count }}</span></div>
+                                        <div class="stat-item views">👁️ <span>{{ blog.views }}</span></div>
+                                    </div>
+                                    <div class="read-more" onclick="openBlogModal(`{{ blog.id }}`,`{{ blog.title|escapejs }}`,`{% if blog.image %}{{ blog.image.url|escapejs }}{% else %}{% static 'uploads/default_blog.jpg' %}{% endif %}`,`{{ blog.content|linebreaksbr|escapejs }}`)">Read More ></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- MODAL -->
+                    <div id="blogModal" class="blog-modal-overlay">
+                        <div class="blog-modal">
+                            <div class="blog-modal-header">
+                                <h2 id="modalTitle"></h2>
+                                <button class="close-btn" onclick="closeBlogModal()">✖</button>
+                            </div>
+                            <div class="blog-modal-image">
+                                <img id="modalImage" src="" alt="">
+                            </div>
+                            <div id="modalContent" class="blog-modal-content"></div>
+                        </div>
+                    </div>
+                        <div id="commentModal" class="blog-modal-overlay">
+                            <div class="blog-modal">
+                                <div class="blog-modal-header">
+                                    <h2>Comments</h2>
+                                    <button class="close-btn" onclick="closeCommentModal()">✖</button>
+                                </div>
+
+                                <div id="commentList" class="blog-modal-content">
+                                    <div class="loading">Loading comments...</div>
+                                </div>
+
+                                <div class="comment-form">
+                                    <textarea id="newCommentContent" placeholder="Add a comment..."></textarea>
+                                    <button id="postCommentBtn">Post Comment</button>
+                                </div>
+                            </div>
+                        </div>
+                {% else %}
+                    <p class="no-blogs">No blogs published yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script>
+// ===============================
+// 🌟 GLOBAL VARIABLES
+// ===============================
+const modal = document.getElementById('blogModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalImage = document.getElementById('modalImage');
+const modalContent = document.getElementById('modalContent');
+
+const commentModal = document.getElementById("commentModal");
+const commentList = document.getElementById("commentList");
+const postCommentBtn = document.getElementById("postCommentBtn");
+const newCommentContent = document.getElementById("newCommentContent");
+
+let activeBlogId = null;
+
+// ===============================
+// 📱 FOLLOW BUTTON FUNCTIONALITY
+// ===============================
+document.addEventListener('DOMContentLoaded', function() {
+    const followButton = document.getElementById('followButton');
+    
+    if (followButton) {
+        followButton.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const isFollowing = this.classList.contains('following');
+            const csrfToken = getCookie('csrftoken');
+            
+            fetch('/follow/' + userId + '/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: isFollowing ? 'unfollow' : 'follow'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (isFollowing) {
+                        this.classList.remove('following');
+                        this.querySelector('span').textContent = 'Follow';
+                    } else {
+                        this.classList.add('following');
+                        this.querySelector('span').textContent = 'Following';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    }
+});
+
+// ===============================
+// 📰 BLOG MODAL HANDLING
+// ===============================
+function openBlogModal(blogId, title, imageUrl, contentHtml) {
+    modalTitle.textContent = title;
+
+    // Reset image state first
+    modalImage.classList.remove("loaded");
+    const imageContainer = document.querySelector(".blog-modal-image");
+
+    if (imageUrl && imageUrl.trim() !== "") {
+        imageContainer.classList.add("active");
+        modalImage.src = imageUrl;
+
+        modalImage.onload = () => {
+            modalImage.classList.add("loaded");
+        };
+    } else {
+        imageContainer.classList.remove("active");
+        modalImage.removeAttribute("src");
+    }
+
+    // Set content and show modal
+    modalContent.innerHTML = contentHtml;
+    modal.classList.add("active");
+    document.body.classList.add("noscroll");
+
+    // ===============================
+    // 🔥 Increment blog view safely
+    // ===============================
+    fetch(`/blogs/blog/${blogId}/increment-view/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    })
+    .then((response) => response.json())
+    .then((data) => {
+        console.log("View update:", data);
+
+        // Optional: live update view count in UI
+        const viewElement = document.querySelector(`#blog-${blogId} .stat-item.views span`);
+        if (viewElement && data.status === "incremented") {
+            viewElement.textContent = data.views;
+        }
+    })
+    .catch((error) => console.error("Error updating blog view:", error));
+}
+
+// ===== Helper function for CSRF =====
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function closeBlogModal() {
+    modal.classList.add('closing');
+    document.body.classList.remove('noscroll');
+    setTimeout(() => {
+        modal.classList.remove('active', 'closing');
+    }, 300);
+}
+
+// Close modal on click outside
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeBlogModal();
+});
+
+// ESC key closes modals
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeBlogModal();
+        closeCommentModal();
+    }
+});
+
+// ===============================
+// 🏷️ FILTER SYSTEM
+// ===============================
+function toggleFilterOverlay() {
+    const overlay = document.getElementById('filterOverlay');
+    if (overlay.style.display === 'flex') {
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.style.display = 'none', 300);
+    } else {
+        overlay.style.display = 'flex';
+        setTimeout(() => overlay.classList.add('active'), 10);
+    }
+}
+
+function filterBlogs(category, element) {
+    // Highlight active chip
+    document.querySelectorAll('.chip').forEach(chip => chip.classList.remove('active'));
+    element.classList.add('active');
+
+    const blogs = document.querySelectorAll('.blog-card');
+    blogs.forEach(blog => {
+        const blogCategory = blog.dataset.category?.toLowerCase() || '';
+        if (category === 'all' || blogCategory === category) {
+            blog.style.display = 'block';
+            blog.style.opacity = '1';
+        } else {
+            blog.style.display = 'none';
+            blog.style.opacity = '0';
+        }
+    });
+
+    // Close overlay after selecting
+    setTimeout(() => toggleFilterOverlay(), 200);
+}
+
+// ===============================
+// ❤️ LIKE BUTTON HANDLING
+// ===============================
+document.addEventListener('DOMContentLoaded', () => {
+    const likeButtons = document.querySelectorAll('.like-btn');
+    const csrfTokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+
+    if (!csrfToken) console.error("⚠️ Missing CSRF token in template!");
+
+    likeButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const blogId = btn.dataset.blog;
+
+            try {
+                const response = await fetch(`/blogs/like/${blogId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    btn.querySelector('.like-count').textContent = data.like_count;
+                    btn.classList.toggle('liked', data.liked);
+                } else {
+                    alert('Error: ' + (data.error || response.statusText));
+                }
+            } catch (err) {
+                console.error('Fetch failed:', err);
+            }
+        });
+    });
+});
+
+// ===============================
+// 💬 COMMENT MODAL HANDLING (Global Smooth Overlay)
+// ===============================
+async function openCommentModal(blogId) {
+    activeBlogId = blogId;
+
+    // If already open, skip re-init
+    if (!commentModal.classList.contains("active")) {
+        commentModal.classList.add("active");
+        document.body.classList.add("noscroll");
+    }
+
+    // Show loading spinner
+    commentList.innerHTML = "<div class='loading'>Loading comments...</div>";
+
+    try {
+        const res = await fetch(`/blogs/${blogId}/comments/`);
+        const data = await res.text();
+
+        // Smooth fade transition
+        commentList.classList.add("fade-out");
+        setTimeout(() => {
+            commentList.innerHTML = data;
+            commentList.classList.remove("fade-out");
+            commentList.classList.add("fade-in");
+
+            setTimeout(() => commentList.classList.remove("fade-in"), 250);
+        }, 120);
+    } catch {
+        commentList.innerHTML = "<p style='color:red;'>Failed to load comments</p>";
+    }
+}
+
+function closeCommentModal() {
+    commentModal.classList.add("closing");
+    document.body.classList.remove("noscroll");
+
+    setTimeout(() => {
+        commentModal.classList.remove("active", "closing");
+        commentList.innerHTML = "<div class='loading'>Loading comments...</div>";
+    }, 250);
+}
+
+// Click outside closes modal
+commentModal.addEventListener("click", (e) => {
+    if (e.target === commentModal) closeCommentModal();
+});
+
+
+        // 💬 Comment Modal Handling
+        async function openCommentModal(blogId) {
+            activeBlogId = blogId;
+            const commentModal = document.getElementById("commentModal");
+            const commentList = document.getElementById("commentList");
+            commentModal.classList.add("active");
+            document.body.classList.add("noscroll");
+            commentList.innerHTML = "<div class='loading'>Loading comments...</div>";
+            try {
+                const res = await fetch(`/blogs/${blogId}/comments/`);
+                const html = await res.text();
+                commentList.innerHTML = html;
+            } catch {
+                commentList.innerHTML = "<p style='color:red;'>Failed to load comments.</p>";
+            }
+        }
+
+        function closeCommentModal() {
+            const commentModal = document.getElementById("commentModal");
+            commentModal.classList.add("closing");
+            document.body.classList.remove("noscroll");
+            setTimeout(() => {
+                commentModal.classList.remove("active", "closing");
+            }, 300);
+        }
+
+        // 🖊️ Post Comment
+        document.getElementById("postCommentBtn").addEventListener("click", async () => {
+            const content = document.getElementById("newCommentContent").value.trim();
+            if (!content) return alert("Comment cannot be empty!");
+            const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+            const res = await fetch(`/blogs/comment/${activeBlogId}/add/`, {
+                method: "POST",
+                headers: { "X-CSRFToken": csrf },
+                body: new URLSearchParams({ content })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById("newCommentContent").value = "";
+                document.getElementById("commentList").insertAdjacentHTML("beforeend", data.html);
+            } else {
+                alert(data.error || "Failed to add comment");
+            }
+        });
+
+        // ↩️ Reply System Fix
+        document.addEventListener("click", async (e) => {
+            if (e.target.classList.contains("reply-btn")) {
+                e.preventDefault();
+                const parentId = e.target.dataset.parent;
+                const form = document.getElementById(`reply-form-${parentId}`);
+                if (form) form.style.display = form.style.display === "none" ? "block" : "none";
+            }
+            if (e.target.classList.contains("post-reply-btn")) {
+                e.preventDefault();
+                const parentId = e.target.dataset.parent;
+                const textarea = e.target.closest(".reply-form").querySelector(".reply-content");
+                const content = textarea.value.trim();
+                if (!content) return;
+                const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+                try {
+                    const res = await fetch(`/blogs/comment/${activeBlogId}/add/`, {
+                        method: "POST",
+                        headers: { "X-CSRFToken": csrf },
+                        body: new URLSearchParams({ content, parent_id: parentId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        textarea.value = "";
+                        const parentDiv = document.querySelector(`[data-id="${parentId}"]`);
+                        parentDiv.insertAdjacentHTML("beforeend", data.html);
+                    }
+                } catch {
+                    alert("Failed to post reply.");
+                }
+            }
+            if (e.target.classList.contains("cancel-reply-btn")) {
+                e.preventDefault();
+                const parentId = e.target.dataset.parent;
+                const form = document.getElementById(`reply-form-${parentId}`);
+                if (form) {
+                    form.style.opacity = "0";
+                    setTimeout(() => {
+                        form.style.display = "none";
+                        form.style.opacity = "1";
+                    }, 150);
+                }
+            }
+        });
+
+        // 💬 Open comment modal when clicking comment icon
+        document.querySelectorAll(".comment-trigger").forEach(trigger => {
+            trigger.addEventListener("click", e => {
+                const blogId = trigger.dataset.blog;
+                openCommentModal(blogId);
+            });
+        });
+
+        document.querySelectorAll(".stat-item").forEach(stat => {
+            if (stat.textContent.includes("💬")) {
+                stat.addEventListener("click", (e) => {
+                    const blogCard = e.target.closest(".blog-card");
+                    activeBlogId = blogCard.dataset.blog;
+                    openCommentModal(activeBlogId);
+                });
+            }
+        });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const followBtn = document.getElementById("followButton");
+    if (!followBtn) return;
+
+    followBtn.addEventListener("click", function () {
+        const username = this.dataset.username;
+        const csrftoken = getCookie("csrftoken");
+
+        fetch(`/blogs/follow/toggle/${username}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrftoken,
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        })
+        .then((res) => res.json())
+        .then((data) => {
+            if (data.status === "followed") {
+                followBtn.textContent = "Unfollow";
+            } else if (data.status === "unfollowed") {
+                followBtn.textContent = "Follow";
+            } else if (data.status === "requested") {
+                followBtn.textContent = "Requested";
+            } else {
+                alert(data.message || "Something went wrong.");
+            }
+        })
+        .catch((err) => console.error(err));
+    });
+
+    // CSRF helper
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + "=")) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+document.addEventListener("DOMContentLoaded", function () {
+    const username = "{{ profile.user.username }}"; // Django template variable
+    const followerEl = document.getElementById("followerCount");
+    const followingEl = document.getElementById("followingCount");
+
+    async function refreshFollowCounts() {
+        try {
+            const response = await fetch(`/ajax/follow-counts/${username}/`);
+            if (!response.ok) throw new Error("Failed to fetch counts");
+            const data = await response.json();
+            followerEl.textContent = data.followers;
+            followingEl.textContent = data.following;
+        } catch (err) {
+            console.error("Error updating follow counts:", err);
+        }
+    }
+});
+    </script>
+</body>
+</html>

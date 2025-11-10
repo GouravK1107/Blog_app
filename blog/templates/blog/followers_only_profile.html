@@ -1,0 +1,79 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {{ profile.name|default:profile.user.username }} - Followers Only
+    </title>
+    <link rel="stylesheet" href="{% static 'blog/css/view_profile.css' %}" />
+    <style>
+      .restricted-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 70vh;
+        background: #f8fafc;
+        border-radius: 1rem;
+        margin: 3rem auto;
+        max-width: 700px;
+        padding: 3rem 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        text-align: center;
+      }
+      .restricted-container h1 {
+        font-size: 2rem;
+        color: #1e293b;
+        margin-bottom: 1rem;
+      }
+      .restricted-container p {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+      }
+      .restricted-container .icon {
+        font-size: 3rem;
+        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1rem;
+      }
+      .back-button {
+        background: #f1f5f9;
+        color: #3b82f6;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+      }
+      .back-button:hover {
+        background: #e2e8f0;
+        transform: translateX(-3px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="restricted-container">
+        <div class="icon">👥</div>
+        <h1>Followers Only</h1>
+        <p>
+          This profile is visible only to followers. Follow {{
+          profile.user.username }} to see their content.
+        </p>
+        <button onclick="history.back()" class="back-button">← Back</button>
+      </div>
+    </div>
+  </body>
+</html>

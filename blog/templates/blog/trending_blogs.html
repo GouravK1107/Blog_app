@@ -1,0 +1,183 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trending Blogs</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'blog/css/trending_blogs.css' %}">
+  <style>
+
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <i class="fas fa-fire"></i>
+        Trending
+      </div>
+      <nav class="nav-links">
+        <a href="{% url 'blogs' %}" class="nav-link">
+          <i class="fa fa-home"></i> Home
+        </a>
+        <a href="{% url 'trending' %}" class="nav-link active">
+          <i class="fa fa-fire"></i> Trending
+        </a>
+        <a href="{% url 'user_blog' %}" class="nav-link">
+          <i class="fa fa-user"></i> My Blogs
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="trending-icon">🔥</div>
+      <h1>Trending Blogs</h1>
+      <p>Discover the most popular and engaging content from our community</p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="container">
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="today">Today</button>
+        <button class="filter-tab" data-filter="week">This Week</button>
+        <button class="filter-tab" data-filter="month">This Month</button>
+      </div>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search trending blogs..."
+        id="searchInput"
+      />
+    </div>
+
+    <!-- Blogs Grid -->
+    <div class="blogs-grid" id="blogsContainer">
+      {% if blogs %}
+        {% for blog in blogs %}
+          <div class="blog-card" data-date="{{ blog.created_at|date:'Y-m-d' }}" data-title="{{ blog.title|lower }}">
+            <div class="blog-image-wrapper">
+              {% if forloop.counter <= 3 %}
+                <div class="trending-badge">
+                  <i class="fa fa-fire"></i> #{{ forloop.counter }} Trending
+                </div>
+              {% endif %}
+              
+              {% if blog.image %}
+                <img src="{{ blog.image.url }}" alt="{{ blog.title }}" class="blog-image" />
+              {% else %}
+                <div class="blog-image" style="background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);"></div>
+              {% endif %}
+            </div>
+
+            <div class="blog-content">
+              <div class="blog-header">
+                {% if blog.author.profile_picture %}
+                  <img src="{{ blog.author.profile_picture.url }}" alt="{{ blog.author.name }}" class="blog-author-avatar">
+                {% else %}
+                  <img src="{% static 'images/default_profile.png' %}" alt="Author" class="blog-author-avatar">
+                {% endif %}
+                <div class="blog-author-info">
+                  <div class="author-name"><a href="{% url 'view_user_profile' blog.author.user.username %}">{{ blog.author.user.profile.name }}</a></div>
+                  <div class="blog-date">{{ blog.created_at|timesince }} ago</div>
+                </div>
+              </div>
+
+              <h3 class="blog-title">{{ blog.title }}</h3>
+              <p class="blog-excerpt">{{ blog.excerpt }}</p>
+
+              {% if blog.tags.all %}
+                <div class="blog-tags">
+                  {% for tag in blog.tags.all %}
+                    <span class="tag-badge">{{ tag.name }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              <div class="blog-footer">
+                <div class="blog-stats">
+                  <span>❤️ {{ blog.like_count }}</span>
+                  <span>💬 {{ blog.comment_count }}</span>
+                  <span>👁️ {{ blog.views }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">🔥</div>
+          <h3>No trending blogs yet</h3>
+          <p>Check back later for trending content!</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Scripts -->
+<script>
+const filterTabs = document.querySelectorAll('.filter-tab');
+const searchInput = document.getElementById('searchInput');
+const blogs = document.querySelectorAll('.blog-card');
+
+function filterBlogs() {
+  const activeFilter = document.querySelector('.filter-tab.active').dataset.filter;
+  const searchQuery = searchInput.value.toLowerCase().trim();
+  const today = new Date();
+
+  blogs.forEach(blog => {
+    const blogDate = new Date(blog.dataset.date);
+    const blogTitle = blog.dataset.title.toLowerCase();
+    let isVisible = true;
+
+    // --- Filter by date ---
+    if (activeFilter === 'today') {
+      isVisible = blogDate.toDateString() === today.toDateString();
+    } else if (activeFilter === 'week') {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      isVisible = blogDate >= weekAgo && blogDate <= today;
+    } else if (activeFilter === 'month') {
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(today.getMonth() - 1);
+      isVisible = blogDate >= monthAgo && blogDate <= today;
+    }
+
+    // --- Filter by search ---
+    if (searchQuery && !blogTitle.includes(searchQuery)) {
+      isVisible = false;
+    }
+
+    // --- Apply display ---
+    blog.style.display = isVisible ? "block" : "none";
+  });
+}
+
+// Handle filter tab clicks
+filterTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    filterTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    filterBlogs();
+  });
+});
+
+// Handle search typing
+searchInput.addEventListener('input', filterBlogs);
+        setInterval(() => refreshFollowCounts(), 5000);
+</script>
+</body>
+</html>

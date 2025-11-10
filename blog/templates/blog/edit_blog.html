@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet">
+    <title>Edit Blog - BlogApp</title>
+    <link rel="stylesheet" href="{% static 'blog/css/create_blog.css' %}">
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Edit Blog</h1>
+            <p class="page-subtitle">Update your post and make improvements</p>
+        </div>
+
+        <div class="create-blog-card">
+            <form method="POST" enctype="multipart/form-data" class="create-blog-form">
+                {% csrf_token %}
+
+                <!-- ===== TITLE ===== -->
+                <div class="form-group">
+                    <label for="title">Title <span class="required">*</span></label>
+                    <input type="text" id="title" name="title" value="{{ blog.title }}" placeholder="Enter blog title" maxlength="200" required>
+                </div>
+
+                <!-- ===== CATEGORY ===== -->
+                <div class="form-group">
+                    <label for="category">Category <span class="required">*</span></label>
+                    <input type="text" id="category" name="category" value="{{ blog.category.name }}" placeholder="Enter or select a category" required>
+                </div>
+
+                <!-- ===== TAGS (MULTIPLE SELECT) ===== -->
+                <div class="form-group">
+                    <label for="tags">Tags</label>
+                    <input name="tags" id="tags" placeholder="Type tags...">
+                </div>
+
+                <!-- ===== IMAGE ===== -->
+                <div class="form-group">
+                    <label for="image">Cover Image</label>
+                    {% if blog.image %}
+                        <div class="current-image">
+                            <p>Current Image:</p>
+                            <img src="{{ blog.image.url }}" alt="Current Blog Image" style="max-width: 200px; border-radius: 5px;">
+                        </div>
+                    {% endif %}
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
+
+                <!-- ===== EXCERPT ===== -->
+                <div class="form-group">
+                    <label for="excerpt">Excerpt</label>
+                    <textarea id="excerpt" name="excerpt" rows="3" maxlength="300" placeholder="A short summary of your blog (optional)...">{{ blog.excerpt }}</textarea>
+                </div>
+
+                <!-- ===== CONTENT ===== -->
+                <div class="form-group">
+                    <label for="content">Content <span class="required">*</span></label>
+                    <textarea id="content" name="content" rows="10" placeholder="Write your full blog content here..." required>{{ blog.content }}</textarea>
+                </div>
+
+                <!-- ===== PUBLISH OPTION ===== -->
+                <div class="form-group checkbox-field">
+                    <label>
+                        <input type="checkbox" name="is_published" {% if blog.is_published %}checked{% endif %}>
+                        Publish immediately
+                    </label>
+                </div>
+
+                <!-- ===== FORM ACTIONS ===== -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Update Blog</button>
+                    <button type="button" class="btn-secondary" onclick="window.history.back()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ===== TAGIFY for Tags =====
+        var input = document.querySelector('#tags');
+        var tagify = new Tagify(input, {
+            whitelist: [],
+            dropdown: {
+                enabled: 0,
+                maxItems: 10,
+                position: "input",
+                closeOnSelect: false
+            }
+        });
+
+        // Load existing tags for this blog
+        var existingTags = JSON.parse('{{ tags_json|escapejs }}');
+        tagify.addTags(existingTags);
+
+        // Fetch tag suggestions from backend
+        fetch("{% url 'tag_suggestions' %}")
+            .then(res => res.json())
+            .then(data => tagify.settings.whitelist = data);
+
+        // ===== CATEGORY with Tagify =====
+        var categoryInput = document.querySelector('#category');
+        var categoryTagify = new Tagify(categoryInput, {
+            enforceWhitelist: false,
+            whitelist: [],
+            maxTags: 1,
+            dropdown: {
+                enabled: 0,
+                maxItems: 10,
+                position: "input",
+                closeOnSelect: true
+            }
+        });
+
+        // Fetch existing categories
+        fetch("{% url 'category_suggestions' %}")
+            .then(res => res.json())
+            .then(data => categoryTagify.settings.whitelist = data);
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Account</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'blog/css/delete_account.css' %}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <a href="{% url 'setting' %}" class="back-btn">
+                    <i class="fa fa-arrow-left"></i>
+                </a>
+                <h1 class="card-title">Delete Account</h1>
+            </div>
+
+            <div class="card-body">
+                <div class="warning-box">
+                    <div class="warning-header">
+                        <i class="fa fa-exclamation-triangle warning-icon"></i>
+                        <span>Warning: This action is permanent!</span>
+                    </div>
+                    <p class="warning-text">
+                        Deleting your account will permanently remove all your data from our servers. This action cannot be undone.
+                    </p>
+                    
+                    <ul class="consequences-list">
+                        <li class="consequence-item">
+                            <i class="fa fa-times-circle"></i>
+                            <span>All your blog posts will be permanently deleted</span>
+                        </li>
+                        <li class="consequence-item">
+                            <i class="fa fa-times-circle"></i>
+                            <span>Your comments and likes will be removed</span>
+                        </li>
+                        <li class="consequence-item">
+                            <i class="fa fa-times-circle"></i>
+                            <span>Your profile and personal information will be erased</span>
+                        </li>
+                        <li class="consequence-item">
+                            <i class="fa fa-times-circle"></i>
+                            <span>You will lose access to all saved content</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <form method="post" id="deleteForm">
+                    {% csrf_token %}
+                    
+                    <div class="form-section">
+                        <h3 class="section-title">Confirm Your Identity</h3>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Enter your password to continue</label>
+                            <input type="password" name="password" class="form-input" required id="passwordInput">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Type "DELETE" to confirm</label>
+                            <input type="text" name="confirmation" class="form-input" placeholder="DELETE" required id="confirmInput">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">Acknowledgment</h3>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="understand" class="checkbox-input" required>
+                            <label for="understand" class="checkbox-label">
+                                I understand that deleting my account is permanent and cannot be undone
+                            </label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="backup" class="checkbox-input" required>
+                            <label for="backup" class="checkbox-label">
+                                I have backed up any important data I want to keep
+                            </label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="confirm" class="checkbox-input" required>
+                            <label for="confirm" class="checkbox-label">
+                                I want to permanently delete my account and all associated data
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                            <i class="fa fa-trash"></i> Delete My Account Permanently
+                        </button>
+                        <a href="{% url 'setting' %}" class="btn btn-secondary">
+                            Cancel & Go Back
+                        </a>
+                    </div>
+                </form>
+
+                <div id="deleteModal" class="modal-overlay" style="display:none;">
+                    <div class="modal-card">
+                        <h2>Confirm Permanent Deletion</h2>
+                        <p>
+                            Are you absolutely sure you want to delete your account? 
+                            This action <strong>cannot be undone</strong> and all your data will be lost.
+                        </p>
+                        <div class="modal-actions">
+                            <button id="cancelDelete" class="btn btn-secondary">Cancel</button>
+                            <button id="confirmDelete" class="btn btn-danger">Yes, Delete My Account</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('deleteForm');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const passwordInput = document.getElementById('passwordInput');
+        const confirmInput = document.getElementById('confirmInput');
+        const checkboxes = document.querySelectorAll('.checkbox-input');
+
+        const modal = document.getElementById('deleteModal');
+        const cancelBtn = document.getElementById('cancelDelete');
+        const confirmBtn = document.getElementById('confirmDelete');
+
+        // Enable delete button dynamically
+        function checkFormValidity() {
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            const hasPassword = passwordInput.value.length > 0;
+            const hasConfirmation = confirmInput.value === 'DELETE';
+            
+            deleteBtn.disabled = !(allChecked && hasPassword && hasConfirmation);
+        }
+
+        checkboxes.forEach(cb => cb.addEventListener('change', checkFormValidity));
+        passwordInput.addEventListener('input', checkFormValidity);
+        confirmInput.addEventListener('input', checkFormValidity);
+
+        // Show modal on delete button click
+        deleteBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            modal.style.display = 'flex';
+        });
+
+        // Cancel modal
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Confirm delete
+        confirmBtn.addEventListener('click', () => {
+            form.submit(); // submit the form for deletion
+        });
+    </script>
+</body>
+</html>

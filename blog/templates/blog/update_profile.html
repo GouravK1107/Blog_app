@@ -1,0 +1,309 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Profile</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="{% static 'blog/css/update_profile.css' %}">
+  <style>
+    .card-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+      color: #fff;
+      padding: 1.75rem 2.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-radius: 0.75rem 0.75rem 0 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .card-header a {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 0.55rem 1.1rem;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .back-btn:active {
+      transform: translateY(0);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Optional: Icon styling inside the back button (if any) */
+    .back-btn svg,
+    .back-btn i {
+      font-size: 1rem;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="card-header">
+        <a href="{% url 'setting' %}" class="back-btn">
+          <i class="fa fa-arrow-left"></i> Back 
+        </a>
+        <h1>Edit Your Profile</h1><br>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Profile Picture -->
+        <div class="profile-section">
+          <div class="profile-avatar">
+            <div class="avatar-circle" onclick="document.getElementById('profile_picture').click()">
+              {% if profile.profile_picture %}
+                <img id="avatarPreview" class="avatar-preview" src="{{ profile.profile_picture.url }}" alt="Profile Picture" />
+              {% else %}
+                <img id="avatarPreview" class="avatar-preview" src="{% static 'blog/images/default_avatar.svg' %}" alt="Profile Picture" />
+              {% endif %}
+            </div>
+
+            <label class="upload-button" for="profile_picture">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                ></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                ></path>
+              </svg>
+            </label>
+            <input type="file" id="profile_picture" name="profile_picture" accept="image/*" />
+          </div>
+          <p class="upload-text">Change profile picture</p>
+        </div>
+
+        <!-- Username & Name -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              placeholder="John Doe"
+              value="{{ profile.name }}"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Bio -->
+        <div class="form-group">
+          <label for="bio">Bio</label>
+          <textarea id="bio" name="bio" rows="3" maxlength="150" placeholder="Tell us about yourself...">{{ profile.bio }}</textarea>
+          <div class="char-count"><span id="charCount">0</span>/150 characters</div>
+        </div>
+
+        <!-- Date of Birth -->
+        <div class="form-group">
+          <label for="dob">Date of Birth</label>
+          <div class="input-wrapper">
+            <input
+              type="date"
+              id="dob"
+              name="dob"
+              class="with-icon"
+              value="{{ profile.date_of_birth|date:'Y-m-d' }}"
+              required
+            />
+            <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              ></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Social Media Links -->
+        <div class="section-divider">
+          <h3 class="section-title">Social Media Links</h3>
+
+          <!-- GitHub -->
+          <div class="form-group">
+            <label for="github">GitHub</label>
+            <div class="input-wrapper">
+              <input
+                type="url"
+                id="github"
+                name="github"
+                class="with-icon"
+                placeholder="https://github.com/username"
+                value="{{ profile.github }}"
+              />
+                <svg class="input-icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
+                </svg>
+            </div>
+          </div>
+
+          <!-- Twitter -->
+          <div class="form-group">
+            <label for="twitter">Twitter</label>
+            <div class="input-wrapper">
+              <input
+                type="url"
+                id="twitter"
+                name="twitter"
+                class="with-icon"
+                placeholder="https://twitter.com/username"
+                value="{{ profile.twitter }}"
+              />
+                <svg class="input-icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
+                </svg>
+            </div>
+          </div>
+
+          <!-- Instagram -->
+          <div class="form-group">
+            <label for="instagram">Instagram</label>
+            <div class="input-wrapper">
+              <input
+                type="url"
+                id="instagram"
+                name="instagram"
+                class="with-icon"
+                placeholder="https://instagram.com/username"
+                value="{{ profile.instagram }}"
+              />
+                <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke-width="2"></rect>
+                    <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" stroke-width="2"></path>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke-width="2" stroke-linecap="round"></line>
+                </svg>
+            </div>
+          </div>
+
+          <!-- LinkedIn -->
+          <div class="form-group">
+            <label for="linkedin">LinkedIn</label>
+            <div class="input-wrapper">
+              <input
+                type="url"
+                id="linkedin"
+                name="linkedin"
+                class="with-icon"
+                placeholder="https://linkedin.com/in/username"
+                value="{{ profile.linkedin }}"
+              />
+                <svg class="input-icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
+                </svg>
+            </div>
+          </div>
+
+          <!-- Website -->
+          <div class="form-group">
+            <label for="website">Website</label>
+            <div class="input-wrapper">
+              <input
+                type="url"
+                id="website"
+                name="website"
+                class="with-icon"
+                placeholder="https://yourwebsite.com"
+                value="{{ profile.website }}"
+              />
+                <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12" stroke-width="2"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke-width="2"></path>
+                </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="button-group">
+          <a href="{% url 'profile' %}" class="cancel-btn">Cancel</a>
+          <button type="submit" class="submit-btn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+    <script>
+  const profilePicInput = document.getElementById("profile_picture");
+  const avatarPreview = document.getElementById("avatarPreview");
+
+  profilePicInput.addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        avatarPreview.src = event.target.result;
+        avatarPreview.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Icon color focus handler
+  const inputs = document.querySelectorAll('input, textarea');
+  inputs.forEach(input => {
+    input.addEventListener('focus', function() {
+      const icon = this.parentElement.querySelector('.input-icon');
+      if (icon) icon.style.color = '#3b82f6';
+    });
+    input.addEventListener('blur', function() {
+      const icon = this.parentElement.querySelector('.input-icon');
+      if (icon) icon.style.color = '#94a3b8';
+    });
+  });
+
+  // Character counter for bio
+  const bio = document.getElementById('bio');
+  const charCount = document.getElementById('charCount');
+  if (bio && charCount) {
+    charCount.textContent = bio.value.length;
+    bio.addEventListener('input', () => {
+      charCount.textContent = bio.value.length;
+    });
+  }
+    </script>
+</body>
+</html>

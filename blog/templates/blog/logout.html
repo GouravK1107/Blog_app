@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logout</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'blog/css/logout.css' %}">
+</head>
+
+<body>
+  <div class="logout-container">
+    <div class="card">
+      <div class="card-icon">
+        <div class="icon-wrapper">
+          <i class="fa fa-sign-out-alt"></i>
+        </div>
+        <h1 class="card-title">Logout</h1>
+        <p class="card-subtitle">Come back soon!</p>
+      </div>
+
+      <div class="card-body">
+        <div class="user-info">
+          {% if request.user.profile.profile_picture %}
+            <img src="{{ request.user.profile.profile_picture.url }}" alt="{{ request.user.profile.name }}" class="user-avatar">
+          {% else %}
+            <img src="{% static 'images/default_profile.png' %}" alt="User" class="user-avatar">
+          {% endif %}
+          <div class="user-details">
+            <div class="user-name">{{ request.user.profile.name|default:"User" }}</div>
+            <div class="user-email">{{ request.user.email }}</div>
+          </div>
+        </div>
+
+        <p class="logout-message">
+          Are you sure you want to logout? You can always come back and continue where you left off.
+        </p>
+
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <div class="form-actions">
+            <button type="submit" class="btn btn-logout">
+              <i class="fa fa-sign-out-alt"></i> Yes, Logout
+            </button>
+            <a href="{% url 'blogs' %}" class="btn btn-cancel">
+              <i class="fa fa-arrow-left"></i> Stay Logged In
+            </a>
+          </div>
+        </form>
+
+        <div class="quick-links">
+          <div class="quick-links-title">Before You Go</div>
+          <div>
+            <a href="{% url 'profile' %}" class="quick-link">
+              <i class="fa fa-edit"></i> Save Draft
+            </a>
+            <a href="{% url 'setting' %}" class="quick-link">
+              <i class="fa fa-cog"></i> Settings
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

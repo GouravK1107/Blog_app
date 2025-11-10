@@ -1,0 +1,137 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Settings</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'blog/css/email_setting.css' %}">
+</head>
+
+<body>
+
+  <!-- ✅ Django Messages -->
+{% if messages %}
+  <div style="margin-bottom: 1rem;">
+    {% for message in messages %}
+      {% if 'success' in message.tags %}
+        <div style="background:#dcfce7; color:#065f46; padding:0.75rem 1rem; border-radius:0.5rem; margin-bottom:0.5rem;">
+          {{ message }}
+        </div>
+      {% elif 'error' in message.tags %}
+        <div style="background:#fee2e2; color:#991b1b; padding:0.75rem 1rem; border-radius:0.5rem; margin-bottom:0.5rem;">
+          {{ message }}
+        </div>
+      {% else %}
+        <div style="background:#e0f2fe; color:#1e3a8a; padding:0.75rem 1rem; border-radius:0.5rem; margin-bottom:0.5rem;">
+          {{ message }}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <a href="{% url 'setting' %}" class="back-btn">
+          <i class="fa fa-arrow-left"></i>
+        </a>
+        <h1 class="card-title">Email Settings</h1>
+      </div>
+
+      <div class="card-body">
+        <h3 class="section-title">
+          <i class="fa fa-envelope"></i>
+          Your Email Addresses
+        </h3>
+
+        <!-- Primary Email -->
+        <div class="email-item">
+          <div class="email-info">
+            <div class="email-address">{{ request.user.email }}</div>
+            <div class="email-status">
+              <span class="status-badge status-verified">
+                <i class="fa fa-check-circle"></i> Verified
+              </span>
+              <span class="status-badge status-primary">
+                <i class="fa fa-star"></i> Primary
+              </span>
+            </div>
+          </div>
+          <div class="email-actions">
+            <form method="post" action="{% url 'resend_verification' request.user.email %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-icon btn-primary-action" title="Resend Verification">
+                <i class="fa fa-paper-plane"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Additional Emails -->
+        {% if additional_emails %}
+          {% for email in additional_emails %}
+            <div class="email-item">
+              <div class="email-info">
+                <div class="email-address">{{ email.email }}</div>
+                <div class="email-status">
+                  {% if email.verified %}
+                    <span class="status-badge status-verified">
+                      <i class="fa fa-check-circle"></i> Verified
+                    </span>
+                  {% else %}
+                    <span class="status-badge status-unverified">
+                      <i class="fa fa-exclamation-circle"></i> Unverified
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="email-actions">
+                {% if not email.verified %}
+                  <form method="get" action="{% url 'email_verify' %}" style="display:inline;">
+                    <button type="submit" class="btn-icon btn-primary-action" title="Verify Email">
+                      <i class="fa fa-key"></i>
+                    </button>
+                  </form>
+                {% endif %}
+                <form method="post" action="{% url 'delete_email' email.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-icon btn-danger" title="Remove" onclick="return confirm('Remove this email address?')">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Add New Email -->
+    <div class="card">
+      <div class="card-body">
+        <h3 class="section-title">
+          <i class="fa fa-plus-circle"></i>
+          Add New Email
+        </h3>
+        
+        <form method="post" action="{% url 'add_email' %}">
+          {% csrf_token %}
+          <div class="add-email-section">
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" name="email" class="form-input" placeholder="newmail@example.com" required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-plus"></i> Add Email Address
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

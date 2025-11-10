@@ -1,0 +1,31 @@
+{% load static %}
+<div class="comment" id="comment-{{ comment.id }}" data-id="{{ comment.id }}" data-blog="{{ comment.blog.id }}">
+    <div class="comment-header">
+        <div class="comment-author">
+            {% if comment.user.profile.profile_picture %}
+                <img src="{{ comment.user.profile.profile_picture.url }}" alt="{{ comment.user.username }}">
+            {% else %}
+                <img src="{% static 'uploads/default_profile.png' %}" alt="User">
+            {% endif %}
+            <strong>{{ comment.user.profile.name|default:comment.user.username }}</strong>
+        </div>
+        <span class="timestamp">{{ comment.created_at|timesince }} ago</span>
+    </div>
+
+    <div class="comment-content">{{ comment.content|linebreaksbr }}</div>
+
+    <button class="reply-btn" data-parent="{{ comment.id }}">Reply</button>
+    <br>
+    <div id="reply-form-{{ comment.id }}" class="reply-form" style="display: none;">
+        <textarea class="reply-content" placeholder="Write a reply..."></textarea>
+        <button class="post-reply-btn" data-parent="{{ comment.id }}">Post Reply</button>
+    </div>
+
+    {% if comment.children.exists %}
+        <div class="replies">
+            {% for reply in comment.children.all %}
+                {% include "blog/comment_single.html" with comment=reply %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

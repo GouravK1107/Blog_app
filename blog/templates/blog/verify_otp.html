@@ -1,0 +1,134 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verify OTP & Reset Password</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:"Inter", sans-serif; background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%); min-height:100vh; padding:3rem 1rem; }
+.container { max-width:600px; margin:0 auto; }
+.card { background:white; border-radius:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); overflow:hidden; }
+.card-header { background:linear-gradient(135deg,#3b82f6 0%,#9333ea 100%); color:white; padding:2rem; display:flex; align-items:center; gap:1rem; }
+.back-btn { background:rgba(255,255,255,0.2); color:white; border:none; padding:0.6rem 1rem; border-radius:0.5rem; cursor:pointer; font-size:0.9rem; text-decoration:none; transition:all 0.3s ease; }
+.back-btn:hover { background:rgba(255,255,255,0.3); }
+.card-title { font-size:1.75rem; font-weight:800; }
+.card-body { padding:2rem; }
+.info-box { background:#eff6ff; border-left:4px solid #3b82f6; padding:1rem; border-radius:0.5rem; margin-bottom:2rem; color:#1e40af; font-size:0.9rem; }
+.form-group { margin-bottom:1.5rem; position:relative; }
+.form-label { display:block; font-weight:600; color:#1e293b; margin-bottom:0.5rem; font-size:0.9rem; }
+.form-input { width:100%; padding:0.75rem 3rem 0.75rem 1rem; border:2px solid #e2e8f0; border-radius:0.75rem; font-size:0.95rem; transition:all 0.3s ease; font-family:inherit; }
+.form-input:focus { outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+.toggle-password { position:absolute; right:1rem; top:30%; transform:translateY(-70%); background:none; border:none; color:#64748b; cursor:pointer; font-size:1.1rem; transition:all 0.3s ease; }
+.toggle-password2 { position:absolute; right:1rem; top:65%; transform:translateY(-40%); background:none; border:none; color:#64748b; cursor:pointer; font-size:1.1rem; transition:all 0.3s ease; }
+.toggle-password:hover { color:#3b82f6; }
+.password-strength { margin-top:0.5rem; height:4px; background:#e2e8f0; border-radius:2px; overflow:hidden; }
+.password-strength-bar { height:100%; width:0%; transition:all 0.3s ease; }
+.strength-weak { width:33%; background:#ef4444; }
+.strength-medium { width:66%; background:#f59e0b; }
+.strength-strong { width:100%; background:#10b981; }
+.password-requirements { margin-top:0.75rem; font-size:0.85rem; color:#64748b; }
+.requirement { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.3rem; }
+.requirement i { font-size:0.75rem; }
+.requirement.met { color:#10b981; }
+.form-actions { display:flex; gap:1rem; margin-top:2rem; }
+.btn { flex:1; padding:0.875rem; border:none; border-radius:0.75rem; font-weight:600; cursor:pointer; transition:all 0.3s ease; font-size:0.95rem; }
+.btn-primary { background:linear-gradient(135deg,#3b82f6 0%,#9333ea 100%); color:white; box-shadow:0 4px 10px rgba(59,130,246,0.3); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 15px rgba(59,130,246,0.4); }
+.btn-secondary { background:#f1f5f9; color:#64748b; text-decoration:none; text-align:center; }
+.btn-secondary:hover { background:#e2e8f0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <a href="{% url 'try_another_way' %}" class="back-btn"><i class="fa fa-arrow-left"></i></a>
+      <h1 class="card-title">Verify OTP & Reset Password</h1>
+    </div>
+    <div class="card-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="info-box" style="background:#d1fae5; border-left:4px solid #10b981; color:#065f46;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Enter OTP</label>
+          <input type="text" name="otp" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" name="new_password1" class="form-input" id="newPassword" required oninput="checkPasswordStrength(this.value)">
+            <button type="button" class="toggle-password" onclick="togglePassword('newPassword', this)">
+              <i class="fa fa-eye"></i>
+            </button>
+          </div>
+          <div class="password-strength">
+            <div class="password-strength-bar" id="strengthBar"></div>
+          </div>
+          <div class="password-requirements">
+            <div class="requirement" id="req-length"><i class="fa fa-circle"></i> At least 8 characters</div>
+            <div class="requirement" id="req-upper"><i class="fa fa-circle"></i> One uppercase letter</div>
+            <div class="requirement" id="req-lower"><i class="fa fa-circle"></i> One lowercase letter</div>
+            <div class="requirement" id="req-number"><i class="fa fa-circle"></i> One number</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" name="new_password2" class="form-input" id="confirmPassword" required>
+            <button type="button" class="toggle-password2" onclick="togglePassword('confirmPassword', this)">
+              <i class="fa fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Reset Password</button>
+          <a href="{% url 'change_password' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePassword(inputId, button) {
+  const input = document.getElementById(inputId);
+  const icon = button.querySelector('i');
+  if(input.type==='password'){input.type='text'; icon.classList.replace('fa-eye','fa-eye-slash');}
+  else{input.type='password'; icon.classList.replace('fa-eye-slash','fa-eye');}
+}
+
+function checkPasswordStrength(password) {
+  const strengthBar = document.getElementById('strengthBar');
+  const requirements = {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    number: /[0-9]/.test(password)
+  };
+  document.getElementById('req-length').classList.toggle('met', requirements.length);
+  document.getElementById('req-upper').classList.toggle('met', requirements.upper);
+  document.getElementById('req-lower').classList.toggle('met', requirements.lower);
+  document.getElementById('req-number').classList.toggle('met', requirements.number);
+  const metCount = Object.values(requirements).filter(v=>v).length;
+  strengthBar.className='password-strength-bar';
+  if(metCount<=2) strengthBar.classList.add('strength-weak');
+  else if(metCount===3) strengthBar.classList.add('strength-medium');
+  else if(metCount===4) strengthBar.classList.add('strength-strong');
+}
+</script>
+</body>
+</html>

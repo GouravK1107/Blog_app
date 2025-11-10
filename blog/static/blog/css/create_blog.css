@@ -1,0 +1,341 @@
+/* ===== GLOBAL ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  color: #1e293b;
+  min-height: 100vh;
+  padding: 3rem 1rem;
+}
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+}
+
+.page-subtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* ===== CREATE BLOG CARD ===== */
+.create-blog-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
+  max-width: 850px;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.create-blog-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+.create-blog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+/* ===== FORM GROUP ===== */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.required {
+  color: #ef4444;
+}
+
+/* ===== INPUTS, SELECTS, TEXTAREAS ===== */
+.form-group input[type="text"],
+.form-group input[type="file"],
+.form-group select,
+.form-group textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.6rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background: #fff;
+  outline: none;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+
+/* ===== TAG SELECTOR ===== */
+.tag-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.tag-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 2rem;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  color: #475569;
+  user-select: none;
+}
+
+.tag-checkbox:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #2563eb;
+}
+
+.tag-checkbox input {
+  accent-color: #3b82f6;
+  transform: scale(1.1);
+}
+
+/* ===== CHECKBOX FIELD ===== */
+.checkbox-field label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+/* ===== BUTTONS ===== */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
+  color: white;
+  padding: 0.7rem 1.8rem;
+  border-radius: 2rem;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  padding: 0.7rem 1.5rem;
+  border-radius: 2rem;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+/* ===== FILE INPUT CUSTOMIZATION ===== */
+input[type="file"] {
+  padding: 0.6rem;
+  font-size: 0.9rem;
+}
+
+input[type="file"]::file-selector-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
+  color: white;
+  border: none;
+  border-radius: 1.5rem;
+  padding: 0.4rem 1rem;
+  margin-right: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+input[type="file"]::file-selector-button:hover {
+  opacity: 0.9;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  body {
+    padding: 1.5rem;
+  }
+
+  .create-blog-card {
+    padding: 1.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+
+  .tag-selector {
+    flex-direction: column;
+  }
+}
+
+/* ===== TAG INPUT FIELD ===== */
+.tag-input-container {
+  position: relative;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.3s ease;
+}
+
+.tag-input-container:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#tagInput {
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 150px;
+  font-size: 0.95rem;
+  padding: 0.5rem;
+  color: #334155;
+}
+
+.selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tag-chip {
+  background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
+  color: white;
+  padding: 0.35rem 0.8rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.remove-tag {
+  cursor: pointer;
+  font-weight: bold;
+  opacity: 0.8;
+}
+
+.remove-tag:hover {
+  opacity: 1;
+}
+
+/* Suggestions Dropdown */
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-top: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  color: #475569;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.suggestion-item:hover {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+select[multiple] {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.95rem;
+  outline: none;
+  width: 100%;
+  height: auto;
+  background-color: #f8fafc;
+  transition: all 0.3s ease;
+}
+
+select[multiple]:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: white;
+}
+
+.hint {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}

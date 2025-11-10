@@ -1,0 +1,303 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings - {{ request.user.profile.name|default:"User" }}</title>
+
+  <!-- Fonts & Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="{% static 'blog/css/setting_page.css' %}">
+  <style>
+    .visibility-select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background: #fff;
+      border: 1.5px solid #d0d8f0;
+      border-radius: 8px;
+      padding: 10px 40px 10px 14px;
+      font-size: 14px;
+      color: #2b2b2b;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 0 2px transparent;
+      background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+    }
+
+    .visibility-select:hover {
+      border-color: #a9b4e0;
+    }
+
+    .visibility-select:focus {
+      outline: none;
+      border-color: #4a6cf7;
+      box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.25);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <div class="settings-header">
+      <div class="header-left">
+        <a href="{% url 'profile' %}" class="back-button">
+          <i class="fa fa-arrow-left"></i> Back
+        </a>
+        <h1 class="settings-title">Settings</h1>
+      </div>
+      {% if request.user.profile.profile_picture %}
+        <img src="{{ request.user.profile.profile_picture.url }}" alt="{{ request.user.profile.name }}" class="user-avatar">
+      {% else %}
+        <img src="{% static 'images/default_profile.png' %}" alt="User" class="user-avatar">
+      {% endif %}
+    </div>
+
+    <!-- Settings Container -->
+    <div class="settings-container">
+      
+      <!-- Account Section -->
+      <div class="settings-section">
+        <div class="section-header">
+          <div class="section-icon">
+            <i class="fa fa-user"></i>
+          </div>
+          <h2 class="section-title">Account</h2>
+        </div>
+        <div class="section-content">
+          <a href="{% url 'edit_profile' %}" class="settings-link">
+            <div class="settings-item">
+              <div class="item-left">
+                <div class="item-icon">
+                  <i class="fa fa-user-edit"></i>
+                </div>
+                <div class="item-info">
+                  <div class="item-title">Edit Profile</div>
+                  <div class="item-description">Update your personal information</div>
+                </div>
+              </div>
+              <div class="item-right">
+                <i class="fa fa-chevron-right item-arrow"></i>
+              </div>
+            </div>
+          </a>
+
+          <a href="{% url 'change_password' %}" class="settings-link">
+            <div class="settings-item">
+              <div class="item-left">
+                <div class="item-icon">
+                  <i class="fa fa-key"></i>
+                </div>
+                <div class="item-info">
+                  <div class="item-title">Change Password</div>
+                  <div class="item-description">Update your password</div>
+                </div>
+              </div>
+              <div class="item-right">
+                <i class="fa fa-chevron-right item-arrow"></i>
+              </div>
+            </div>
+          </a>
+
+          <a href="{% url 'email_settings' %}" class="settings-link">
+            <div class="settings-item">
+              <div class="item-left">
+                <div class="item-icon">
+                  <i class="fa fa-envelope"></i>
+                </div>
+                <div class="item-info">
+                  <div class="item-title">Email Settings</div>
+                  <div class="item-description">Manage your email preferences</div>
+                </div>
+              </div>
+              <div class="item-right">
+                <i class="fa fa-chevron-right item-arrow"></i>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Privacy Section -->
+      <div class="settings-section">
+        <div class="section-header">
+          <div class="section-icon">
+            <i class="fa fa-shield-alt"></i>
+          </div>
+          <h2 class="section-title">Privacy</h2>
+        </div>
+        <div class="section-content">
+          <form method="POST" action="{% url 'update_settings' %}">
+            {% csrf_token %}
+            <div class="settings-item">
+              <div class="item-left">
+                <div class="item-icon"><i class="fa fa-eye"></i></div>
+                <div class="item-info">
+                  <div class="item-title">Profile Visibility</div>
+                  <div class="item-description">Choose who can view your profile</div>
+                </div>
+              </div>
+
+              <div class="item-right">
+                <select name="profile_visibility" class="visibility-select">
+                  <option value="public" {% if profile.profile_visibility == 'public' %}selected{% endif %}>Public</option>
+                  <option value="followers" {% if profile.profile_visibility == 'followers' %}selected{% endif %}>Followers Only</option>
+                  <option value="private" {% if profile.profile_visibility == 'private' %}selected{% endif %}>Private</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="save-btn">Save Changes</button>
+          </form>
+             <br>
+          <div class="settings-item">
+            <div class="item-left">
+              <div class="item-icon">
+                <i class="fa fa-user-secret"></i>
+              </div>
+              <div class="item-info">
+                <div class="item-title">Show Activity Status</div>
+                <div class="item-description">Let others see when you're active</div>
+              </div>
+            </div>
+            <div class="item-right">
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <a href="#" class="settings-link">
+            <div class="settings-item">
+              <div class="item-left">
+                <div class="item-icon">
+                  <i class="fa fa-ban"></i>
+                </div>
+                <div class="item-info">
+                  <div class="item-title">Blocked Users</div>
+                  <div class="item-description">Manage blocked accounts</div>
+                </div>
+              </div>
+              <div class="item-right">
+                <i class="fa fa-chevron-right item-arrow"></i>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+            <!-- Preferences Section -->
+      <div class="settings-section">
+        <div class="section-header">
+          <div class="section-icon">
+            <i class="fa fa-cog"></i>
+          </div>
+          <h2 class="section-title">Preferences</h2>
+        </div>
+        <div class="section-content">
+          <div class="settings-item">
+            <div class="item-left">
+              <div class="item-icon">
+                <i class="fa fa-moon"></i>
+              </div>
+              <div class="item-info">
+                <div class="item-title">Dark Mode</div>
+                <div class="item-description">Switch to dark theme</div>
+              </div>
+            </div>
+            <div class="item-right">
+              <label class="toggle-switch">
+                <input type="checkbox" id="themeToggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="danger-zone">
+        <div class="section-header">
+          <div class="section-icon">
+            <i class="fa fa-exclamation-triangle"></i>
+          </div>
+          <h2 class="section-title">Danger Zone</h2>
+        </div>
+        <div class="section-content">
+          <a href="{% url 'logout' %}" class="settings-link">
+            <div class="settings-item">
+              <div class="item-left">
+                <div class="item-icon">
+                  <i class="fa fa-sign-out-alt"></i>
+                </div>
+                <div class="item-info">
+                  <div class="item-title">Logout</div>
+                  <div class="item-description">Sign out from your account</div>
+                </div>
+              </div>
+              <div class="item-right">
+                <i class="fa fa-chevron-right item-arrow"></i>
+              </div>
+            </div>
+          </a>
+
+          <a href="{% url 'delete_account' %}" class="settings-link">
+            <div class="settings-item">
+              <div class="item-left">
+                <div class="item-icon">
+                  <i class="fa fa-trash"></i>
+                </div>
+                <div class="item-info">
+                  <div class="item-title">Delete Account</div>
+                  <div class="item-description">Permanently delete your account</div>
+                </div>
+              </div>
+              <div class="item-right">
+                <i class="fa fa-chevron-right item-arrow"></i>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const toggle = document.getElementById("themeToggle");
+  const darkTheme = document.getElementById("darkTheme");
+
+  if (!toggle || !darkTheme) {
+    console.warn("Dark mode: stylesheet link missing.");
+    return;
+  }
+
+  // Apply saved preference
+  const isDark = localStorage.getItem("darkMode") === "true";
+  darkTheme.disabled = !isDark;
+  toggle.checked = isDark;
+
+  // Toggle and save preference
+  toggle.addEventListener("change", function() {
+    const enabled = toggle.checked;
+    darkTheme.disabled = !enabled;
+    localStorage.setItem("darkMode", enabled);
+  });
+});
+setInterval(() => refreshFollowCounts(), 5000);
+</script>
+
+</body>
+</html>

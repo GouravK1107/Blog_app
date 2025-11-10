@@ -1,0 +1,21 @@
+body {
+  background-color: #121212;
+  color: #f5f5f5;
+}
+
+.card, .navbar, .footer, .notification-panel {
+  background-color: #1f1f1f !important;
+  color: #e4e4e4 !important;
+}
+
+a {
+  color: #8ab4f8;
+}
+
+.toggle-slider {
+  background: #444;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #4caf50;
+}

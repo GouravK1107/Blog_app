@@ -1,0 +1,222 @@
+{% load static %}
+{% load follow_extras %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Users</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'blog/css/search_users.css' %}">
+  <style>
+
+  </style>
+</head>
+
+<body>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="search-header">
+      <div class="header-top">
+        <a href="javascript:history.back()" class="back-btn">
+          <i class="fa fa-arrow-left"></i> Back
+        </a>
+        <h1 class="page-title">Search Users</h1>
+      </div>
+
+      <div class="search-box">
+        <i class="fa fa-search search-icon"></i>
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Search by name or username..." 
+          id="searchInput"
+          value="{{ query }}"
+        >
+      </div>
+    </div>
+
+    {% if query %}
+      <div class="results-count">
+        Found {{ users.count }} user{{ users.count|pluralize }} for "{{ query }}"
+      </div>
+    {% endif %}
+
+    <div id="userResults">
+      {% if users %}
+        {% for user in users %}
+          <div class="user-card">
+            <div class="user-avatar-wrapper">
+              {% if user.profile.profile_picture %}
+                <img src="{{ user.profile.profile_picture.url }}" alt="{{ user.profile.name }}" class="user-avatar">
+              {% else %}
+                <img src="{% static 'images/default_profile.png' %}" alt="User" class="user-avatar">
+              {% endif %}
+
+              <!-- Visibility Badge -->
+              {% if user.profile.profile_visibility == 'public' %}
+                <div class="visibility-badge badge-public" title="Public Profile">
+                  <i class="fa fa-globe"></i>
+                </div>
+              {% elif user.profile.profile_visibility == 'followers' %}
+                <div class="visibility-badge badge-followers" title="Followers Only">
+                  <i class="fa fa-users"></i>
+                </div>
+              {% elif user.profile.profile_visibility == 'private' %}
+                <div class="visibility-badge badge-private" title="Private Profile">
+                  <i class="fa fa-lock"></i>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="user-info">
+              <div class="user-name">{{ user.profile.name|default:user.username }}</div>
+              <div class="user-username">@{{ user.username }}</div>
+
+              {% if user.profile.bio %}
+                <div class="user-bio">{{ user.profile.bio }}</div>
+              {% endif %}
+
+              <div class="user-meta">
+                {% if user.profile.date_of_birth %}
+                  <div class="meta-item">
+                    <i class="fa fa-birthday-cake"></i>
+                    {{ user.profile.age }} years
+                  </div>
+                {% endif %}
+                <div class="meta-item">
+                  <i class="fa fa-calendar"></i>
+                  Joined {{ user.date_joined|date:"M Y" }}
+                </div>
+              </div>
+            </div>
+
+            <div class="user-actions">
+              {% if user != request.user %}
+                {% if user.profile.profile_visibility == 'public' %}
+                  <!-- Public Profile: Direct Follow -->
+                  {% if user|is_following:request.user %}
+                  <form class="unfollow-form" data-user-id="{{ user.id }}" method="post" action="{% url 'unfollow_user' user.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-following">
+                      <i class="fa fa-user-check"></i> Following
+                    </button>
+                  </form>
+                  {% else %}
+                  <form class="follow-form" data-user-id="{{ user.id }}" data-username="{{ user.username }}" data-visibility="{{ user.profile.profile_visibility }}" method="post" action="{% url 'follow_user' user.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-follow">
+                      <i class="fa fa-user-plus"></i> Follow
+                    </button>
+                  </form>
+                  {% endif %}
+                {% else %}
+                  <!-- Private / Followers Only -->
+                  {% if user|has_pending_request:request.user %}
+                    <button class="btn btn-requested" disabled>
+                      <i class="fa fa-clock"></i> Request Sent
+                    </button>
+                  {% elif user|is_following:request.user %}
+                  <form class="unfollow-form" data-user-id="{{ user.id }}" method="post" action="{% url 'unfollow_user' user.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-following">
+                      <i class="fa fa-user-check"></i> Following
+                    </button>
+                  </form>
+                  {% else %}
+                  <form class="request-form" data-username="{{ user.username }}" method="post" action="{% url 'send_follow_request' user.username %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-request">
+                      <i class="fa fa-paper-plane"></i> Send Request
+                    </button>
+                  </form>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+
+              <a href="{% url 'view_user_profile' user.username %}" class="btn btn-view">
+                <i class="fa fa-eye"></i> View Profile
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fa fa-user-slash"></i>
+          </div>
+          <h3 class="empty-title">
+            {% if query %}
+              No users found
+            {% else %}
+              Start searching
+            {% endif %}
+          </h3>
+          <p class="empty-text">
+            {% if query %}
+              Try a different search term
+            {% else %}
+              Type a name or username to find users
+            {% endif %}
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    // Real-time search
+    document.addEventListener('DOMContentLoaded', function() {
+      const forms = document.querySelectorAll('.follow-form, .unfollow-form, .request-form');
+
+      forms.forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const button = this.querySelector('button');
+            const actionURL = this.action;
+            const csrfToken = this.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            try {
+                const response = await fetch(actionURL, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    if (this.classList.contains('follow-form')) {
+                      button.innerHTML = '<i class="fa fa-user-check"></i> Following';
+                      button.classList.remove('btn-follow');
+                      button.classList.add('btn-following');
+                      this.classList.remove('follow-form');
+                      this.classList.add('unfollow-form');
+                      this.action = this.action.replace('follow/', 'unfollow/');
+                    } else if (this.classList.contains('unfollow-form')) {
+                      button.innerHTML = '<i class="fa fa-user-plus"></i> Follow';
+                      button.classList.remove('btn-following');
+                      button.classList.add('btn-follow');
+                      this.classList.remove('unfollow-form');
+                      this.classList.add('follow-form');
+                      this.action = this.action.replace('unfollow/', 'follow/');
+                    } else if (this.classList.contains('request-form')) {
+                      button.innerHTML = '<i class="fa fa-clock"></i> Request Sent';
+                      button.disabled = true;
+                      button.classList.remove('btn-request');
+                      button.classList.add('btn-requested');
+                    }
+                }
+            } catch (err) {
+                console.error('Follow error:', err);
+            }
+          });
+      });
+    });
+    setInterval(() => refreshFollowCounts(), 5000);
+  </script>
+</body>
+</html>
