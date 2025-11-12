@@ -833,7 +833,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const isFollowing = this.classList.contains('following');
             const csrfToken = getCookie('csrftoken');
             
-            fetch('/follow/' + userId + '/', {
+            fetch(`/follow/${userId}/`, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': csrfToken,

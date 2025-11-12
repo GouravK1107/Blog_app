@@ -22,12 +22,8 @@ from django.core.mail import send_mail
 import random
 from django.db.models import Q
 
-# PROFILE MANAGEMENT VIEWS
 @login_required
 def create_or_edit_profile(request):
-    """
-    Create or edit user profile with personal information and social links
-    """
     # Try to get existing profile for the logged-in user
     try:
         profile = Profile.objects.get(user=request.user)
@@ -60,13 +56,9 @@ def create_or_edit_profile(request):
 
 @login_required
 def profile_view(request):
-    """
-    Display user's own profile with follower statistics
-    """
     profile = request.user.profile
     user_obj = request.user  # This is key
 
-    # Calculate follower statistics
     followers_count = Follow.objects.filter(following=user_obj, is_approved=True).count()
     following_count = Follow.objects.filter(follower=user_obj, is_approved=True).count()
 
@@ -79,9 +71,7 @@ def profile_view(request):
 
 @login_required
 def update_profile(request):
-    """
-    Handles displaying and updating the user's profile information
-    """
+    """Handles displaying and updating the user's profile."""
     profile = request.user.profile  # Assuming OneToOne relation with User
 
     # Define this first so it's always available (GET or POST)
@@ -119,18 +109,11 @@ def update_profile(request):
         {"profile": profile, "social_fields": social_fields},
     )
 
-# DASHBOARD & BLOG VIEWS
 def dashboard_view(request):
-    """Main dashboard view"""
     return render(request, 'blog/dashboard.html')
-
 
 @login_required
 def blog(request):
-    """
-    Display all published blogs with visibility filtering
-    Shows only blogs that the current user is authorized to see
-    """
     # Fetch all published blogs
     all_blogs = Blog.objects.filter(is_published=True).select_related('author', 'author__user', 'category').prefetch_related('tags')
 
@@ -161,22 +144,12 @@ def blog(request):
     notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
     unread_count = notifications.filter(is_read=False).count()
 
-    return render(request, 'blog/blogs.html', {
-        'blogs': visible_blogs, 
-        'categories': categories, 
-        'notifications': notifications,
-        'unread_count': unread_count
-    })
-
+    return render(request, 'blog/blogs.html', {'blogs': visible_blogs, 'categories': categories, 'notifications': notifications,'unread_count': unread_count})
 
 @require_POST
 def increment_blog_view(request, blog_id):
-    """
-    Increment blog view count with session-based duplicate prevention
-    """
     blog = get_object_or_404(Blog, id=blog_id, is_published=True)
 
-    # Don't count views when author views their own blog
     if request.user.is_authenticated and blog.author.user == request.user:
         return JsonResponse({'status': 'skipped', 'views': blog.views})
 
@@ -189,27 +162,18 @@ def increment_blog_view(request, blog_id):
 
     return JsonResponse({'status': 'already_viewed', 'views': blog.views})
 
-
-# BLOG CREATION & MANAGEMENT VIEWS
 @login_required
 def tag_suggestions(request):
-    """AJAX endpoint for tag autocomplete suggestions"""
     tags = list(Tag.objects.values_list('name', flat=True))
     return JsonResponse(tags, safe=False)
 
-
 @login_required
 def category_suggestions(request):
-    """AJAX endpoint for category autocomplete suggestions"""
     categories = list(Category.objects.values_list('name', flat=True))
     return JsonResponse(categories, safe=False)
 
-
 @login_required
 def create_blog(request):
-    """
-    Create a new blog post with tags and category handling
-    """
     categories = Category.objects.all()
 
     if request.method == "POST":
@@ -274,12 +238,8 @@ def create_blog(request):
         "categories": categories
     })
 
-
 @login_required
 def edit_blog(request, slug):
-    """
-    Edit an existing blog post
-    """
     blog = get_object_or_404(Blog, slug=slug, author=request.user.profile)
     categories = Category.objects.all()
     tags = list(blog.tags.values_list('name', flat=True))  # ✅ define early
@@ -308,12 +268,8 @@ def edit_blog(request, slug):
     }
     return render(request, 'blog/edit_blog.html', context)
 
-
 @login_required
 def delete_blog(request, slug):
-    """
-    Delete a blog post with confirmation
-    """
     blog = get_object_or_404(Blog, slug=slug, author=request.user.profile)
 
     if request.method == 'POST':
@@ -323,13 +279,8 @@ def delete_blog(request, slug):
 
     return render(request, 'blog/confirm_delete.html', {'blog': blog})
 
-
-# USER PROFILE & FOLLOW SYSTEM VIEWS
 @login_required
 def view_user_profile(request, username):
-    """
-    View another user's profile with visibility controls
-    """
     user_obj = get_object_or_404(User, username=username)
     profile = get_object_or_404(user_obj.profile.__class__, user=user_obj)
 
@@ -362,12 +313,8 @@ def view_user_profile(request, username):
         'following_count': following_count,
     })
 
-
 @login_required
 def my_blogs(request):
-    """
-    Display current user's blogs with statistics
-    """
     user_profile = request.user.profile
 
     blogs = (
@@ -403,14 +350,9 @@ def my_blogs(request):
 
     return render(request, 'blog/my_blog.html', context)
 
-
-# LIKE & COMMENT SYSTEM VIEWS
 @require_POST
 @login_required
 def toggle_like(request, blog_id):
-    """
-    Toggle like on a blog post and create notification
-    """
     blog = get_object_or_404(Blog, id=blog_id)
     like, created = Like.objects.get_or_create(user=request.user, blog=blog)
 
@@ -433,12 +375,8 @@ def toggle_like(request, blog_id):
         'like_count': blog.likes.count(),
     })
 
-
 @login_required
 def add_comment(request, blog_id):
-    """
-    Add a comment to a blog post (supports nested replies)
-    """
     blog = get_object_or_404(Blog, id=blog_id)
     content = request.POST.get('content', '').strip()
     parent_id = request.POST.get('parent_id')
@@ -461,20 +399,13 @@ def add_comment(request, blog_id):
 
 @login_required
 def load_comments(request, blog_id):
-    """
-    Load all comments for a blog post
-    """
     blog = get_object_or_404(Blog, id=blog_id)
     comments = blog.comments.filter(is_approved=True, parent__isnull=True)
     return render(request, 'blog/comments.html', {'comments': comments})
 
 
-# TRENDING & DISCOVERY VIEWS
 @login_required
 def trending(request):
-    """
-    Display trending blogs with filtering and notification system
-    """
     filter_option = request.GET.get('filter', 'all')
     search_query = request.GET.get('q', '')
 
@@ -537,18 +468,13 @@ def trending(request):
     return render(request, 'blog/trending_blogs.html', context)
 
 
-
-# SETTINGS & ACCOUNT MANAGEMENT VIEWS
 @login_required
 def setting(request):
-    """Main settings page"""
     profile = request.user.profile
     return render(request, 'blog/setting_page.html', {'profile': profile})
 
-
 @login_required
 def update_settings(request):
-    """Update user settings like profile visibility"""
     profile = request.user.profile
     if request.method == 'POST':
         visibility = request.POST.get('profile_visibility')
@@ -556,7 +482,6 @@ def update_settings(request):
             profile.profile_visibility = visibility
             profile.save()
     return redirect('setting')
-
 
 @login_required
 def change_password(request):
@@ -578,10 +503,8 @@ def change_password(request):
 
     return render(request, 'blog/change_password.html', {'form': form})
 
-
 @login_required
 def logout_view(request):
-    """Handle user logout with confirmation"""
     if request.method == "POST":
         logout(request)
         messages.success(request, "You have been logged out successfully.")
@@ -590,8 +513,6 @@ def logout_view(request):
     # If it's a GET request, render a confirmation page
     return render(request, 'blog/logout.html')
 
-
-# EMAIL MANAGEMENT VIEWS
 @login_required
 def email_settings(request):
     """Displays primary + additional emails."""
@@ -645,7 +566,6 @@ def set_primary_email(request, email_id):
         request.user.save()
         messages.success(request, f"{email_obj.email} set as your primary email.")
     return redirect('email_settings')
-
 
 @login_required
 @require_POST
@@ -725,10 +645,8 @@ def verify_email_otp(request):
             messages.error(request, "Invalid code. Try again.")
         return redirect('email_verify')
     
-
 @login_required
 def resend_verification(request, email):
-    """Resend email verification OTP"""
     try:
         create_and_send_otp(request.user, email)
         messages.success(request, f"Verification code resent to {email}.")
@@ -736,13 +654,8 @@ def resend_verification(request, email):
         messages.error(request, "Failed to resend verification email.")
     return redirect('email_settings')
 
-
-# PASSWORD RESET & ACCOUNT RECOVERY VIEWS
 @login_required
 def try_another_way(request):
-    """
-    Alternative password reset method using username and OTP
-    """
     if request.method == "POST":
         username = request.POST.get('username')
         try:
@@ -768,12 +681,8 @@ def try_another_way(request):
     # This handles GET request
     return render(request, 'blog/try_another_way.html')
 
-
 @login_required
 def verify_otp(request):
-    """
-    Verify OTP and reset password
-    """
     if request.method == "POST":
         otp_input = request.POST.get('otp')
         new_password1 = request.POST.get('new_password1')
@@ -812,11 +721,8 @@ def verify_otp(request):
     return render(request, 'blog/verify_otp.html')
 
 
-
-# USER SEARCH & FOLLOW SYSTEM VIEWS
 @login_required
 def search_users(request):
-    """Search for users by username or profile name"""
     query = request.GET.get('q', '').strip()
     users = User.objects.exclude(id=request.user.id).select_related('profile')
 
@@ -827,12 +733,8 @@ def search_users(request):
 
     return render(request, 'blog/search_users.html', {'users': users, 'query': query})
 
-
 @login_required
 def send_follow_request(request, username):
-    """
-    Send follow request to another user with visibility-based approval
-    """
     target_user = get_object_or_404(User, username=username)
 
     if request.user == target_user:
@@ -885,7 +787,6 @@ def send_follow_request(request, username):
 
 @login_required
 def approve_follow_request(request, follower_username):
-    """Approve a pending follow request"""
     follower_user = get_object_or_404(User, username=follower_username)
     follow_obj = get_object_or_404(
         Follow, follower=follower_user, following=request.user, is_approved=False
@@ -899,7 +800,6 @@ def approve_follow_request(request, follower_username):
 
 @login_required
 def reject_follow_request(request, follower_username):
-    """Reject a pending follow request"""
     follower_user = get_object_or_404(User, username=follower_username)
     follow_obj = get_object_or_404(
         Follow, follower=follower_user, following=request.user, is_approved=False
@@ -909,14 +809,12 @@ def reject_follow_request(request, follower_username):
     messages.info(request, f"You rejected {follower_user.username}'s follow request.")
     return redirect('follow_requests')
 
-
 @login_required
 def follow_user(request, user_id):
-    """Follow a user with AJAX support"""
     target_user = get_object_or_404(User, id=user_id)
 
     if request.user == target_user:
-        return JsonResponse({"message": "You can't follow yourself."}, status=400)
+        return JsonResponse({"message": "You can’t follow yourself."}, status=400)
 
     existing = Follow.objects.filter(follower=request.user, following=target_user).first()
     if existing:
@@ -937,7 +835,6 @@ def follow_user(request, user_id):
 
 @login_required
 def unfollow_user(request, user_id):
-    """Unfollow a user"""
     target_user = get_object_or_404(User, id=user_id)
 
     follow_relation = Follow.objects.filter(follower=request.user, following=target_user).first()
@@ -949,16 +846,14 @@ def unfollow_user(request, user_id):
 
     return redirect('view_user_profile', username=target_user.username)
 
-
 @login_required
 def toggle_follow_ajax(request, username):
-    """AJAX endpoint to toggle follow status"""
     if request.method != "POST":
         return JsonResponse({"message": "POST only"}, status=405)
 
     target = get_object_or_404(User, username=username)
     if request.user == target:
-        return JsonResponse({"message": "You can't follow yourself."}, status=400)
+        return JsonResponse({"message": "You can’t follow yourself."}, status=400)
 
     relation = Follow.objects.filter(follower=request.user, following=target).first()
 
@@ -988,11 +883,8 @@ def toggle_follow_ajax(request, username):
     return JsonResponse({"status": "followed"})
 
 
-
-# NOTIFICATION SYSTEM VIEWS
 @login_required
 def notification_panel(request):
-    """Display all user notifications"""
     notifications = Notification.objects.filter(recipient=request.user)\
                         .select_related('sender', 'blog', 'comment', 'follow')\
                         .order_by('-created_at')
@@ -1002,7 +894,6 @@ def notification_panel(request):
 @login_required
 @require_POST
 def mark_all_notifications_read(request):
-    """Mark all notifications as read"""
     Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
     return JsonResponse({"success": True})
 
@@ -1010,7 +901,6 @@ def mark_all_notifications_read(request):
 @login_required
 @require_POST
 def clear_all_notifications(request):
-    """Delete all notifications"""
     Notification.objects.filter(recipient=request.user).delete()
     return JsonResponse({"success": True})
 
@@ -1018,7 +908,6 @@ def clear_all_notifications(request):
 @login_required
 @require_POST
 def handle_follow_request(request, notif_id, action):
-    """Handle follow request approval/rejection via AJAX"""
     notif = get_object_or_404(Notification, id=notif_id, recipient=request.user, notification_type='follow_request')
     follow_obj = notif.follow
 
@@ -1076,9 +965,9 @@ def handle_follow_request(request, notif_id, action):
     })
 
 
+    
 @login_required
 def notifications_view(request):
-    """Legacy notifications view"""
     # Get notifications for the logged-in user, newest first
     notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
     unread_count = notifications.filter(is_read=False).count()
@@ -1087,7 +976,6 @@ def notifications_view(request):
         'notifications': notifications,
         'unread_count': unread_count,
     })
-
 
 @login_required
 def get_follow_counts(request, username=None):
@@ -1108,13 +996,8 @@ def get_follow_counts(request, username=None):
         'following_count': following_count
     })
 
-
-# ACCOUNT DELETION VIEW
 @login_required
 def delete_account(request):
-    """
-    Permanently delete user account and all associated data
-    """
     if request.method == 'POST':
         password = request.POST.get('password')
         confirmation = request.POST.get('confirmation')
